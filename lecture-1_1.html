@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Модель OSI: лекция 1</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column; the 7-layer stack and the 3-network route are the two signature visuals */
+:root{
+  --bg:#f5f7fa; --surface:#ffffff; --fg:#17202e; --muted:#5a6678; --line:#dbe1ea; --accent:#2f5bd3; --accent-soft:#e6ecfb;
+  --good:#1d8a52; --good-soft:#e2f4ea; --bad:#c23b32; --bad-soft:#fbe7e5; --hl:#f6d34a; --hl-soft:#fff6cf;
+  --l7:#7a4cc2; --l6:#a1459a; --l5:#c4466a; --l4:#d06a2a; --l3:#b48a12; --l2:#2f8f5b; --l1:#2f6fb3;
+  --l7s:#f0eafa; --l6s:#f7e9f5; --l5s:#fbe8ee; --l4s:#fcede3; --l3s:#f8f1dc; --l2s:#e3f3ea; --l1s:#e4eef9;
+  --display:"Unbounded", "Golos Text", system-ui, sans-serif;
+  --body:"Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10151d; --surface:#18202b; --fg:#e7ecf3; --muted:#9aa6b8; --line:#2a3443; --accent:#7f9df0; --accent-soft:#1f2b45;
+  --good:#5cc68b; --good-soft:#163325; --bad:#ef7d74; --bad-soft:#3a1c1a; --hl:#e3c058; --hl-soft:#3a3218;
+  --l7:#b18cf0; --l6:#e08ad6; --l5:#f08aa8; --l4:#f3a06a; --l3:#e3c058; --l2:#6fcf98; --l1:#73aef0;
+  --l7s:#271f38; --l6s:#2f1d2d; --l5s:#33202a; --l4s:#33261d; --l3s:#2f2a18; --l2s:#18301f; --l1s:#18273a;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10151d; --surface:#18202b; --fg:#e7ecf3; --muted:#9aa6b8; --line:#2a3443; --accent:#7f9df0; --accent-soft:#1f2b45;
+  --good:#5cc68b; --good-soft:#163325; --bad:#ef7d74; --bad-soft:#3a1c1a; --hl:#e3c058; --hl-soft:#3a3218;
+  --l7:#b18cf0; --l6:#e08ad6; --l5:#f08aa8; --l4:#f3a06a; --l3:#e3c058; --l2:#6fcf98; --l1:#73aef0;
+  --l7s:#271f38; --l6s:#2f1d2d; --l5s:#33202a; --l4s:#33261d; --l3s:#2f2a18; --l2s:#18301f; --l1s:#18273a;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+.wrap{max-width:860px;margin:0 auto}
+h1,h2,h3{text-wrap:balance;line-height:1.25}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,5vw,38px);margin:0}
+h2{font-family:var(--display);font-weight:500;font-size:clamp(20px,3.4vw,25px);margin:0}
+h3{font-size:17px;margin:0}
+p{margin:0;max-width:68ch}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono);font-size:.92em}
+a{color:var(--accent)}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+header.top{padding-block:40px 24px;display:grid;gap:12px}
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--muted)}
+
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;flex-wrap:wrap;gap:6px;padding-block:10px;border-bottom:1px solid var(--line);margin-bottom:28px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.tab{font:600 15px var(--body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 16px;border-radius:999px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+section.block{display:grid;gap:14px;margin-bottom:48px}
+.kicker{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.time{font-family:var(--mono);font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:4px;align-content:start;min-width:0}
+.card b{font-size:15px}
+.card span{font-size:14px;color:var(--muted)}
+.group-label{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-top:4px}
+
+.quote{border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:10px 14px;font-size:15px}
+
+/* history timeline */
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.flow .card{border-top:4px solid var(--accent)}
+
+/* OSI stack */
+.osi{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px;align-items:start}
+@media (max-width:660px){.osi{grid-template-columns:1fr}}
+.stack{display:grid;gap:5px}
+.layer{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:10px;width:100%;text-align:left;
+  font:500 15px var(--body);color:var(--fg);background:var(--ls);border:1px solid transparent;border-left:6px solid var(--lc);
+  border-radius:8px;padding:9px 12px;cursor:pointer}
+.layer .n{font-family:var(--mono);font-weight:600;color:var(--lc)}
+.layer .pdu{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.layer[aria-pressed="true"]{border-color:var(--lc);box-shadow:0 0 0 1px var(--lc) inset}
+.detail{background:var(--surface);border:1px solid var(--line);border-top:6px solid var(--lc);border-radius:10px;padding:16px;display:grid;gap:10px;min-width:0}
+.detail dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:15px}
+.detail dt{color:var(--muted);font-size:13px;padding-top:2px}
+.detail dd{margin:0}
+.chip{display:inline-block;font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:999px;background:var(--ls);color:var(--fg);border:1px solid var(--lc);margin:0 4px 4px 0}
+.lect{font-size:14px;background:var(--accent-soft);border-radius:8px;padding:8px 10px}
+
+.tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+tr:last-child td{border-bottom:0}
+
+/* encapsulation */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:14px;min-width:0}
+.packet{display:flex;flex-wrap:wrap;gap:0;font-family:var(--mono);font-size:13px;min-height:46px}
+.seg{padding:12px 10px;border:1px solid var(--lc);background:var(--ls);color:var(--fg);display:flex;align-items:center}
+.seg+.seg{border-left:0}
+.seg:first-child{border-radius:8px 0 0 8px}.seg:last-child{border-radius:0 8px 8px 0}.seg:only-child{border-radius:8px}
+.seg.new{animation:pop .35s ease-out}
+@keyframes pop{from{transform:translateY(-6px);opacity:.3}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.seg.new{animation:none}}
+.caption{font-size:15px;min-height:3.2em}
+.controls{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:600 15px var(--body);border:1px solid var(--fg);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:8px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--fg);border-color:var(--line)}
+.btn:disabled{opacity:.4;cursor:default}
+
+/* segmentation */
+.segm{display:grid;grid-template-columns:auto 1fr;gap:10px 14px;align-items:center}
+.box{height:30px;border-radius:6px;background:var(--l4s);border:1px solid var(--l4)}
+.pieces{display:flex;gap:4px;flex-wrap:wrap}
+.pieces i{display:block;width:34px;height:30px;border-radius:5px;background:var(--l4s);border:1px solid var(--l4)}
+.pieces i.bad{background:var(--bad-soft);border-color:var(--bad)}
+
+/* network diagram */
+.netwrap{overflow-x:auto}
+.netwrap svg{display:block;width:100%;min-width:620px;height:auto}
+.net-ellipse{fill:var(--surface);stroke:var(--line);stroke-width:2}
+.net-ellipse.on{stroke:var(--accent);stroke-width:3}
+.net-label{fill:var(--muted);font:600 13px var(--body)}
+.node{fill:var(--l2s);stroke:var(--l2);stroke-width:2}
+.node.on{fill:var(--hl-soft);stroke:var(--hl);stroke-width:3}
+.router{fill:var(--l3s);stroke:var(--l3);stroke-width:2}
+.router.on{fill:var(--hl-soft);stroke:var(--hl);stroke-width:3}
+.t{fill:var(--fg);font:600 12px var(--mono)}
+.ts{fill:var(--muted);font:500 11px var(--mono)}
+.link{stroke:var(--line);stroke-width:2}
+.dot{fill:var(--accent)}
+@media (prefers-reduced-motion:no-preference){.dot{transition:cx .5s ease,cy .5s ease}}
+.hdrs{display:grid;gap:8px}
+.hdr{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center;font-size:14px}
+@media (max-width:520px){.hdr{grid-template-columns:1fr}}
+.hdr .lbl{font-weight:600}
+.fields{display:flex;flex-wrap:wrap;gap:6px}
+.f{font-family:var(--mono);font-size:13px;border:1px solid var(--lc);background:var(--ls);border-radius:6px;padding:4px 8px}
+.f.chg{background:var(--hl-soft);border-color:var(--hl);box-shadow:0 0 0 1px var(--hl) inset}
+.rt{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.rt table{font-family:var(--mono);font-size:13px}
+.rt tr.on td{background:var(--hl-soft)}
+.rt h3{font-size:14px;padding:8px 10px 0}
+
+/* wireshark mock */
+.ws{font-family:var(--mono);font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+.ws div{padding:6px 12px;border-bottom:1px solid var(--line);white-space:nowrap;border-left:5px solid var(--lc)}
+.ws div:last-child{border-bottom:0}
+
+.recap{display:grid;gap:8px;padding:0;margin:0;list-style:none}
+.recap li{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+
+/* quiz */
+.qwrap{display:grid;gap:16px}
+.progress{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--muted)}
+.bar{flex:1;height:8px;background:var(--line);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:12px}
+.qcard h3{font-size:18px}
+.opts{display:grid;gap:8px}
+.opt{font:500 15px var(--body);text-align:left;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:11px 14px;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt.right{background:var(--good-soft);border-color:var(--good)}
+.opt.wrong{background:var(--bad-soft);border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.explain{font-size:15px;border-radius:8px;padding:10px 12px;background:var(--accent-soft)}
+.order{display:grid;gap:6px}
+.pool{display:flex;flex-wrap:wrap;gap:6px}
+.pick{font:500 14px var(--body);border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:999px;padding:7px 12px;cursor:pointer}
+.slot{display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:center;font-size:15px;min-height:38px;border:1px dashed var(--line);border-radius:8px;padding:6px 10px}
+.slot .n{font-family:var(--mono);font-weight:600;color:var(--muted)}
+.slot.ok{border-style:solid;border-color:var(--good);background:var(--good-soft)}
+.slot.no{border-style:solid;border-color:var(--bad);background:var(--bad-soft)}
+.result{text-align:center;display:grid;gap:10px;justify-items:center}
+.score{font-family:var(--display);font-size:46px;font-weight:700}
+.review{display:grid;gap:6px;text-align:left;width:100%}
+.review div{font-size:14px;padding:8px 10px;border-radius:8px;background:var(--bad-soft)}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Компьютерные сети · Лекция 1 · ГПО «Киберполигон»</div>
+  <h1>Задачи сетевой коммуникации и модель OSI</h1>
+  <p class="muted">Конспект по расшифровке лекции А. Береснева (ИТМО), пересказанный простыми словами. В скобках у разделов стоит время в видео, чтобы быстро найти нужный момент. Во вкладке «Тест» 19 заданий по этой лекции.</p>
+  <div class="note"><a href="https://www.youtube.com/watch?v=Rrnr7MMUFko" target="_blank" rel="noopener">Открыть лекцию на YouTube</a> · 1 ч 17 мин</div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab" role="tab" id="tab-notes" aria-selected="true" data-view="notes">Конспект</button>
+  <button class="tab" role="tab" id="tab-quiz" aria-selected="false" data-view="quiz">Тест</button>
+</nav>
+
+<main id="view-notes">
+
+  <section class="block">
+    <div class="kicker"><h2>1. Почему связать компьютеры трудно</h2><span class="time">5:08</span></div>
+    <p>Мы пользуемся сетью каждый день и не замечаем, сколько задач она решает. Лектор делит проблемы на две группы. Именно из-за них сетевые технологии устроены так сложно: подтверждения, кодирование, контроль перегрузок.</p>
+    <div class="group-label">Архитектурные проблемы</div>
+    <div class="grid">
+      <div class="card"><b>Разные системы</b><span>У Windows и Linux разная архитектура, адресация, авторизация. Внутри ОС процессы общаются по-разному, но через сеть почему-то понимают друг друга.</span></div>
+      <div class="card"><b>Разное оборудование</b><span>Данные идут через Wi-Fi, потом Ethernet, потом что-то ещё. У каждого участка свои правила, форматы кадров и скорости. Настоящий «зоопарк».</span></div>
+      <div class="card"><b>Организационные ограничения</b><span>Большая сеть состоит из кусков, которые принадлежат разным организациям. Нужно договариваться об адресах, оплате и законах разных стран.</span></div>
+    </div>
+    <div class="group-label">Технологические проблемы</div>
+    <div class="grid">
+      <div class="card"><b>Задержка</b><span>Скорость канала не бесконечна, и передача может занимать даже секунды. Приложения должны это учитывать.</span></div>
+      <div class="card"><b>Пропускная способность</b><span>Канал пропускает ограниченный объём данных. Пример — «хабраэффект»: статья стала популярной, все пришли на сайт, и он упал.</span></div>
+      <div class="card"><b>Физика и помехи</b><span>На сигнал влияет всё вокруг, особенно на радио.</span></div>
+      <div class="card"><b>Сбои и потери</b><span>Частичная потеря пакетов для современных сетей — нормальная ситуация. В сетях есть механизмы, которые это исправляют.</span></div>
+      <div class="card"><b>Угрозы безопасности</b><span>Несанкционированный доступ, DoS-атаки, подмена (спуфинг). Это тоже влияет на то, как устроены сети.</span></div>
+      <div class="card"><b>Конфигурация и совместимость</b><span>В больших системах трудно согласовать настройки всех устройств.</span></div>
+      <div class="card"><b>Масштабируемость</b><span>Большая система ведёт себя непредсказуемо: её свойства не равны сумме свойств её частей.</span></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>2. Откуда взялась модель OSI</h2><span class="time">20:19</span></div>
+    <div class="flow">
+      <div class="card"><b>Было: монолиты</b><span>Производитель продавал всё сразу: провода, адаптеры, протоколы, программы. Взять софт одной фирмы и железо другой было нельзя.</span></div>
+      <div class="card"><b>Проблема: привязка к вендору</b><span>Военные США не хотели зависеть от одной компании (vendor lock) и попросили открытые стандарты.</span></div>
+      <div class="card"><b>Решение: ISO</b><span>Международная организация по стандартизации разработала модель взаимодействия открытых систем — Open Systems Interconnection.</span></div>
+    </div>
+    <p><b>Главные идеи модели:</b></p>
+    <div class="grid">
+      <div class="card"><b>Разбить на этапы</b><span>Весь процесс передачи делят на изолированные этапы, у каждого — своя небольшая задача.</span></div>
+      <div class="card"><b>Каждый этап — «чёрный ящик»</b><span>Известно, что подаётся на вход, что получается на выходе и какую функцию он выполняет. Как он устроен внутри, неважно.</span></div>
+      <div class="card"><b>Стандартные разъёмы</b><span>Между ящиками чётко описаны интерфейсы. Стек собирается из них, как башня из кубиков Lego.</span></div>
+    </div>
+    <div class="quote">Аналитики решили, что нужно минимум 7 уровней. В реальных сетевых стеках уровней всегда было меньше: в оставшемся стеке TCP/IP их 4 («строго говоря, три с половиной»).</div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>3. Семь уровней OSI</h2><span class="time">26:30 · 44:38</span></div>
+    <p>Нумерация идёт снизу вверх: 1 — физический, 7 — прикладной. Нажмите на уровень, чтобы увидеть, что о нём говорит лектор.</p>
+    <div class="osi">
+      <div class="stack" id="stack"></div>
+      <div class="detail" id="detail" aria-live="polite"></div>
+    </div>
+    <p class="muted">Запоминалка сверху вниз (7→1): <b>A</b>ll <b>P</b>eople <b>S</b>eem <b>T</b>o <b>N</b>eed <b>D</b>ata <b>P</b>rocessing — Application, Presentation, Session, Transport, Network, Data link, Physical.</p>
+    <div class="quote"><b>OSI — академическая модель.</b> Целиком её так и не реализовали: попытки были неудачными, получилось слишком избыточно. Учить её нужно ради трёх вещей: она хорошо объясняет, как устроен сетевой стек; её идеология заложена во все современные стеки; её термины используют все специалисты.</div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>4. Инкапсуляция: матрёшка</h2><span class="time">27:27</span></div>
+    <p>Данные приходят от программы на верх стека. Каждый уровень обрабатывает их и добавляет свой <b>служебный заголовок</b>. Нижний уровень не различает, где чужой заголовок, а где данные: для него это просто кусок байтов. Получатель разбирает «матрёшку» в обратном порядке.</p>
+    <div class="panel">
+      <div class="packet" id="packet"></div>
+      <div class="caption" id="ecap"></div>
+      <div class="controls">
+        <button class="btn ghost" id="eback">Назад</button>
+        <button class="btn" id="enext">Следующий шаг</button>
+        <button class="btn ghost" id="ereset">Сначала</button>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card"><b>Кому нужен заголовок</b><span>Только «коллеге» того же уровня на другой стороне. Пример из лекции: уровень представления пишет в заголовок алгоритм сжатия и размер словаря. Остальным уровням это неинтересно.</span></div>
+      <div class="card"><b>Логически — горизонтально</b><span>Каждый уровень «думает», что общается напрямую с таким же уровнем на другом компьютере. Физически же данные идут вертикально: вниз по стеку и вверх.</span></div>
+      <div class="card"><b>Зачем трейлер</b><span>На канальном уровне кроме заголовка добавляется трейлер — признак конца кадра. Физический уровень «не умеет думать», и получателю нужно как-то понять, где кадр закончился.</span></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>5. Сегментация на транспортном уровне</h2><span class="time">33:04</span></div>
+    <p>Сообщение растёт за счёт заголовков только до сеансового уровня. Транспортный уровень <b>режет данные на части</b>, и дальше каждая часть упаковывается отдельно. Аналогия лектора: морской контейнер из Китая перегружают в 20 «газелек», а потом снова собирают.</p>
+    <div class="panel">
+      <div class="segm">
+        <span class="muted" style="font-size:14px">Было</span><div class="box"></div>
+        <span class="muted" style="font-size:14px">Стало</span><div class="pieces" id="pieces"></div>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card"><b>Причина 1: делить канал во времени</b><span>Если вы качаете сериал на 10 ГБ одним куском, все соседи по дому ждут, пока закончится загрузка. Куски разных потоков идут вперемешку, поэтому кажется, что канал свободен у всех.</span></div>
+      <div class="card"><b>Причина 2: ошибки</b><span>Каналы ненадёжны. Каждый кусок проверяют по контрольной сумме. Если один кусок испорчен, заново передают только его (на схеме он красный), а не весь файл.</span></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>6. Стек, протокол и уровень</h2><span class="time">40:31</span></div>
+    <div class="grid">
+      <div class="card"><b>Сетевой стек</b><span>Набор модулей разных уровней, собранных в одну систему в определённом порядке ради передачи данных.</span></div>
+      <div class="card"><b>Сетевой протокол</b><span>Спецификация, которая решает одну небольшую задачу. Работает как чёрный ящик и привязан к своему уровню.</span></div>
+      <div class="card"><b>В OSI уровень = протокол</b><span>В модели на каждом уровне ровно один протокол. В реальных стеках на одном уровне их несколько: например, на транспортном работают и TCP, и UDP.</span></div>
+    </div>
+    <div class="quote"><b>Строгая и нестрогая инкапсуляция.</b> В OSI порядок вложения жёсткий: транспортный в сетевой, сетевой в канальный. В реальности вкладывать можно почти что угодно куда угодно. Пример — <b>VPN</b>: наш IP-пакет упаковывают в другой IP-пакет, он проходит мимо фильтров до точки VPN-провайдера и там распаковывается. Туннельные протоколы умеют даже передавать кадры канального уровня внутри IP.</div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>7. Многоуровневая адресация</h2><span class="time">54:47</span></div>
+    <p>Если на канальном уровне уже есть адреса (MAC), зачем нужны ещё и сетевые (IP)? Разберём на схеме из лекции: три локальные сети и два маршрутизатора. Пакет идёт от узла <span class="mono">1-1</span> к узлу <span class="mono">3-3</span>. Следите, что меняется в заголовках, а что нет.</p>
+    <div class="panel">
+      <div class="netwrap"><svg id="net" viewBox="0 0 760 250" role="img" aria-label="Схема: три локальные сети и маршрутизаторы M1 и M2"></svg></div>
+      <div class="hdrs" id="hdrs"></div>
+      <div class="caption" id="ncap"></div>
+      <div class="controls">
+        <button class="btn ghost" id="nback">Назад</button>
+        <button class="btn" id="nnext">Следующий шаг</button>
+        <button class="btn ghost" id="nreset">Сначала</button>
+      </div>
+      <div class="rt" id="rt"></div>
+    </div>
+    <p class="muted" style="font-size:14px">Обозначения: IP-адрес записан как «сеть-узел» (1-1 — сеть 1, узел 1). MAC-адрес — три буквы. В сети 2 MAC записаны маленькими буквами: это значит, что там может работать совсем другой канальный протокол.</p>
+    <div class="grid">
+      <div class="card"><b>IP не меняется</b><span>Адреса отправителя и получателя в пакете одинаковые на всём пути.</span></div>
+      <div class="card"><b>Кадр каждый раз новый</b><span>В каждой локальной сети пакет заново упаковывается в кадр со своими MAC-адресами: «от этого порта — к следующему устройству».</span></div>
+      <div class="card"><b>Маршрутизаторы — «эгоисты»</b><span>Таблица маршрутизации описывает только один шаг до следующего маршрутизатора. Дальше пусть разбирается он.</span></div>
+      <div class="card"><b>ARP: как узнать MAC шлюза</b><span>Узел знает IP шлюза, но не его MAC. Он «кричит» на всю сеть: «у кого адрес 1-3?». Отвечает только владелец, и ответ сохраняется в ARP-кэше (команда <span class="mono">arp -a</span>).</span></div>
+      <div class="card"><b>MAC может повторяться</b><span>MAC действует только внутри своей локальной сети. На схеме у узла 1-1 и порта M2 в сети 3 одинаковый MAC, и это не проблема.</span></div>
+      <div class="card"><b>Зачем два уровня адресов</b><span>Так в одну большую сеть объединяются разные канальные технологии. Стек IPX пробовал делать IP-адрес из MAC, но это оказалось неудобно: сменил сетевую карту — сменился адрес.</span></div>
+    </div>
+    <div class="quote">Аналогия из лекции: в комнате три разных человека. Чтобы общаться, им нужен общий язык. Общий язык для разных локальных сетей — это сетевой протокол (IP) с единой адресацией.</div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>8. Как это выглядит в Wireshark</h2><span class="time">1:12:58</span></div>
+    <p>В конце лекции преподаватель перехватил трафик к сайту на HTTP и показал матрёшку в программе Wireshark. Разбирают её снаружи внутрь:</p>
+    <div class="ws" id="ws"></div>
+    <p class="muted">Wireshark пригодится вам на практике по анализу трафика. Это ровно те уровни, которые разобраны выше.</p>
+  </section>
+
+  <section class="block">
+    <h2>Главное за 30 секунд</h2>
+    <ul class="recap">
+      <li>Связать разные системы через разное оборудование трудно, поэтому сетевой стек сложный.</li>
+      <li>OSI придумали, чтобы собирать сети из решений разных производителей по открытым стандартам. Модель академическая, но её идеи и термины используют везде.</li>
+      <li>7 уровней: физический, канальный, сетевой, транспортный, сеансовый, представления, прикладной. В TCP/IP их 4.</li>
+      <li>Каждый уровень добавляет заголовок для своего «коллеги» (инкапсуляция). Канальный добавляет ещё и трейлер.</li>
+      <li>Транспортный уровень режет данные на сегменты: чтобы делить канал и перепосылать только испорченные куски.</li>
+      <li>MAC — адрес внутри локальной сети, IP — во всей составной сети. Кадр меняется в каждой сети, IP-пакет — нет.</li>
+    </ul>
+    <div><button class="btn" id="go-quiz">Пройти тест</button></div>
+  </section>
+</main>
+
+<main id="view-quiz" hidden>
+  <div class="qwrap" id="quiz"></div>
+</main>
+</div>
+
+<script>
+const L = [
+  {n:7,name:"Прикладной",en:"Application",pdu:"данные",task:"Даёт пользователю и программам доступ к сетевому стеку. По сути это набор команд, которыми обмениваются клиент и сервер, а сервер отвечает кодами вроде 404 или 201.",ex:["HTTP","FTP","SMTP","DNS"],lect:"Незашифрованным протоколом можно пользоваться вообще без программы, вводя команды руками. Разработчики обычно работают через библиотеки. Это самый «густонаселённый» уровень: протоколов здесь больше всего."},
+  {n:6,name:"Представления",en:"Presentation",pdu:"данные",task:"Сжатие и шифрование данных, их кодировка и безопасность.",ex:["TLS / SSL"],lect:"Буква S в HTTPS — это работа TLS/SSL. Браузер отдаёт HTTP-сообщения не сразу в сеть, а сначала модулю TLS, который их шифрует."},
+  {n:5,name:"Сеансовый",en:"Session",pdu:"данные",task:"Обеспечивает взаимодействие процессов: клиент и сервер устанавливают сеанс, у которого есть адрес и состояние.",ex:["RPC"],lect:"Хороших примеров мало. Самый подходящий — RPC, удалённый вызов процедур: старый, но до сих пор работающий протокол."},
+  {n:4,name:"Транспортный",en:"Transport",pdu:"сегмент",task:"Сегментация, подтверждения и гарантия доставки.",ex:["TCP","UDP","SCTP"],lect:"TCP отвечает за надёжную доставку. SCTP умеет то, чего TCP не умеет: несколько потоков данных в одном соединении."},
+  {n:3,name:"Сетевой",en:"Network",pdu:"пакет",task:"Адресация узлов в составной сети, доставка данных по ней, маршрутизация, управление перегрузкой и сопоставление сетевых адресов с физическими.",ex:["IP","ARP"],lect:"Даже в маленькой сети без интернета сетевой уровень всё равно занимается адресацией и доставкой пакетов."},
+  {n:2,name:"Канальный",en:"Data link",pdu:"кадр",task:"Доставка данных между узлами внутри одной локальной сети и аппаратная адресация (MAC).",ex:["Ethernet","Wi-Fi","Bluetooth"],lect:"«Уровень железяк». Здесь к кадру добавляется трейлер — признак конца кадра."},
+  {n:1,name:"Физический",en:"Physical",pdu:"биты",task:"Ничего не обрабатывает. Это спецификации физического кодирования: провода, разъёмы, характеристики линии связи.",ex:["кабели","разъёмы","радиоэфир"],lect:"Единственный «неинтеллектуальный» уровень: он просто передаёт сигнал."}
+];
+const col = n => `--lc:var(--l${n});--ls:var(--l${n}s)`;
+
+const stack=document.getElementById('stack'), detail=document.getElementById('detail');
+function showLayer(n){
+  const l=L.find(x=>x.n===n);
+  stack.querySelectorAll('.layer').forEach(b=>b.setAttribute('aria-pressed', b.dataset.n==n));
+  detail.setAttribute('style',col(n));
+  detail.innerHTML=`<h3>${l.n}. ${l.name} <span class="muted">(${l.en})</span></h3>
+   <p>${l.task}</p>
+   <dl><dt>Единица данных</dt><dd class="mono">${l.pdu}</dd><dt>Примеры</dt><dd>${l.ex.map(e=>`<span class="chip">${e}</span>`).join('')}</dd></dl>
+   <div class="lect"><b>Из лекции:</b> ${l.lect}</div>`;
+}
+L.forEach(l=>{const b=document.createElement('button');b.className='layer';b.dataset.n=l.n;b.setAttribute('style',col(l.n));
+  b.innerHTML=`<span class="n">${l.n}</span><span>${l.name}</span><span class="pdu">${l.pdu}</span>`;b.onclick=()=>showLayer(l.n);stack.appendChild(b);});
+showLayer(4);
+
+// encapsulation demo
+const E=[
+ {segs:[[7,"Данные программы"]],t:"Программа передаёт данные на верх стека."},
+ {segs:[[7,"Заг. 7"],[7,"Данные"]],t:"<b>Прикладной уровень</b> обработал данные и добавил свой заголовок."},
+ {segs:[[6,"Заг. 6"],[7,"Заг. 7"],[7,"Данные"]],t:"<b>Уровень представления</b> не различает чужой заголовок и данные. Для него это просто байты, к которым он добавляет свой заголовок (например, «сжато таким-то алгоритмом»)."},
+ {segs:[[5,"Заг. 5"],[6,"Заг. 6"],[7,"Заг. 7"],[7,"Данные"]],t:"<b>Сеансовый уровень</b> добавляет свой заголовок."},
+ {segs:[[4,"Заг. 4"],[5,"5"],[6,"6"],[7,"7 + данные"]],t:"<b>Транспортный уровень</b> режет данные на сегменты (см. раздел 5) и добавляет заголовок к каждому."},
+ {segs:[[3,"Заг. 3"],[4,"4"],[5,"5"],[6,"6"],[7,"7 + данные"]],t:"<b>Сетевой уровень</b> добавляет заголовок с IP-адресами. Получился пакет."},
+ {segs:[[2,"Заг. 2"],[3,"3"],[4,"4"],[5,"5"],[6,"6"],[7,"7 + данные"],[2,"Трейлер"]],t:"<b>Канальный уровень</b> добавляет заголовок с MAC-адресами и <b>трейлер</b> — признак конца кадра."},
+ {segs:[[1,"0101101110010… биты в линии связи"]],t:"<b>Физический уровень</b> передаёт сигнал. На принимающей стороне всё пойдёт наоборот: каждый уровень снимет свой заголовок и передаст остальное наверх."}
+];
+let ei=0;
+function drawE(){
+  document.getElementById('packet').innerHTML=E[ei].segs.map((s,i)=>`<div class="seg ${i===0||(ei===6&&i===6)?'new':''}" style="${col(s[0])}">${s[1]}</div>`).join('');
+  document.getElementById('ecap').innerHTML=`<span class="muted">Шаг ${ei+1} из ${E.length}.</span> ${E[ei].t}`;
+  document.getElementById('eback').disabled=ei===0;document.getElementById('enext').disabled=ei===E.length-1;
+}
+document.getElementById('enext').onclick=()=>{if(ei<E.length-1){ei++;drawE()}};
+document.getElementById('eback').onclick=()=>{if(ei>0){ei--;drawE()}};
+document.getElementById('ereset').onclick=()=>{ei=0;drawE()};
+drawE();
+
+document.getElementById('pieces').innerHTML=Array.from({length:12},(_,i)=>`<i class="${i===7?'bad':''}" title="${i===7?'испорченный сегмент — перепослать только его':'сегмент'}"></i>`).join('');
+
+// network demo
+const svg=document.getElementById('net');
+const N={ // positions
+  h11:[70,85], h12:[70,175], m1a:[205,130], m1b:[260,130], h23:[380,200], m2a:[495,130], m2b:[550,130], h31:[690,70], h33:[690,180]
+};
+const labels={h11:["1-1","AAA"],h12:["1-2","ABB"],m1a:["1-3","ABA"],m1b:["2-1","bbb"],h23:["2-3","bdd"],m2a:["2-2","bcb"],m2b:["3-2","AAA"],h31:["3-1","CAC"],h33:["3-3","CCC"]};
+svg.innerHTML=`
+ <ellipse class="net-ellipse" id="lan1" cx="120" cy="130" rx="115" ry="108"/>
+ <ellipse class="net-ellipse" id="lan2" cx="377" cy="130" rx="135" ry="108"/>
+ <ellipse class="net-ellipse" id="lan3" cx="640" cy="130" rx="115" ry="108"/>
+ <text class="net-label" x="40" y="22">Сеть 1</text><text class="net-label" x="352" y="22">Сеть 2</text><text class="net-label" x="660" y="22">Сеть 3</text>
+ <line class="link" x1="205" y1="130" x2="260" y2="130"/><line class="link" x1="495" y1="130" x2="550" y2="130"/>
+ <rect class="router" id="r1" x="214" y="112" width="38" height="36" rx="6"/><text class="t" x="222" y="135">M1</text>
+ <rect class="router" id="r2" x="504" y="112" width="38" height="36" rx="6"/><text class="t" x="512" y="135">M2</text>
+ ${['h11','h12','h23','h31','h33'].map(k=>`<circle class="node" id="${k}" cx="${N[k][0]}" cy="${N[k][1]}" r="16"/><text class="t" x="${N[k][0]+22}" y="${N[k][1]-2}">${labels[k][0]}</text><text class="ts" x="${N[k][0]+22}" y="${N[k][1]+13}">${labels[k][1]}</text>`).join('')}
+ <text class="ts" x="150" y="100">1-3 · ABA</text><text class="ts" x="262" y="100">2-1 · bbb</text>
+ <text class="ts" x="440" y="100">2-2 · bcb</text><text class="ts" x="552" y="100">3-2 · AAA</text>
+ <text class="ts" x="20" y="232">шлюз по умолчанию узла 1-1: 1-3</text>
+ <circle class="dot" id="dot" cx="70" cy="85" r="7"/>`;
+
+const S=[
+ {at:'h11',lan:1,on:['h11'],frame:null,ip:['1-1','3-3'],chg:['ip'],rt:null,
+  t:"Узел <b>1-1</b> хочет отправить данные узлу <b>3-3</b>. Сетевой уровень формирует пакет: от 1-1 к 3-3. Получатель в другой сети, значит, отправлять нужно через шлюз по умолчанию <b>1-3</b> (порт маршрутизатора M1)."},
+ {at:'h11',lan:1,on:['h11','r1'],frame:null,ip:['1-1','3-3'],chg:[],rt:null,
+  t:"Чтобы собрать кадр, нужен MAC шлюза, а известен только его IP. Узел спрашивает по <b>ARP</b> на всю сеть: «у кого адрес 1-3?». Отвечает только M1: «у меня, мой MAC — ABA»."},
+ {at:'m1a',lan:1,on:['h11','r1'],frame:['AAA','ABA'],ip:['1-1','3-3'],chg:['f0','f1'],rt:null,
+  t:"Пакет упакован в кадр <b>сети 1</b>: MAC отправителя — AAA (узел 1-1), MAC получателя — ABA (порт M1). Кадр видят все узлы сети, но принимает только M1: MAC совпал."},
+ {at:'m1b',lan:2,on:['r1'],frame:null,ip:['1-1','3-3'],chg:[],rt:[0,2],
+  t:"M1 распаковывает кадр, смотрит IP получателя (3-3) и ищет его в таблице маршрутизации. Для сети 3: выйти через порт <b>2-1</b> на шлюз <b>2-2</b>, то есть к маршрутизатору M2."},
+ {at:'m2a',lan:2,on:['r1','r2'],frame:['bbb','bcb'],ip:['1-1','3-3'],chg:['f0','f1'],rt:null,
+  t:"Тот же пакет упакован в <b>новый кадр сети 2</b>: от bbb (порт M1) к bcb (порт M2). MAC-адреса поменялись, IP-адреса — нет."},
+ {at:'m2b',lan:3,on:['r2'],frame:null,ip:['1-1','3-3'],chg:[],rt:[1,1],
+  t:"M2 распаковывает кадр и смотрит в свою таблицу. Для сети 3 порт и шлюз совпадают (3-2 = 3-2). Значит, M2 подключён к этой сети <b>напрямую</b> и отправит кадр сразу узлу-получателю."},
+ {at:'h33',lan:3,on:['r2','h33'],frame:['AAA','CCC'],ip:['1-1','3-3'],chg:['f0','f1'],rt:null,
+  t:"Новый кадр <b>сети 3</b>: от AAA (порт M2) к CCC (узел 3-3). MAC порта M2 такой же, как у узла 1-1 в сети 1, но это не мешает: сети разные."},
+ {at:'h33',lan:3,on:['h33'],frame:null,ip:['1-1','3-3'],chg:[],rt:null,
+  t:"Узел 3-3: MAC в кадре совпал — кадр принят и распакован. IP в пакете тоже его — данные уходят наверх, на транспортный уровень. Доставлено!"}
+];
+const RT=[
+ {name:"Таблица маршрутизации M1",rows:[["1","1-3","1-3"],["2","2-1","2-1"],["3","2-1","2-2"]]},
+ {name:"Таблица маршрутизации M2",rows:[["1","2-2","2-1"],["3","3-2","3-2"]]}
+];
+let ni=0;
+function drawN(){
+  const s=S[ni], d=document.getElementById('dot');
+  d.setAttribute('cx',N[s.at][0]); d.setAttribute('cy',N[s.at][1]);
+  [1,2,3].forEach(i=>document.getElementById('lan'+i).classList.toggle('on',i===s.lan));
+  ['h11','h12','h23','h31','h33'].forEach(k=>document.getElementById(k).classList.toggle('on',s.on.includes(k)));
+  document.getElementById('r1').classList.toggle('on',s.on.includes('r1'));
+  document.getElementById('r2').classList.toggle('on',s.on.includes('r2'));
+  const fr = s.frame ? `<div class="hdr" style="${col(2)}"><span class="lbl">Кадр (канальный)</span><div class="fields"><span class="f ${s.chg.includes('f0')?'chg':''}">MAC от: ${s.frame[0]}</span><span class="f ${s.chg.includes('f1')?'chg':''}">MAC кому: ${s.frame[1]}</span></div></div>`
+    : `<div class="hdr" style="${col(2)}"><span class="lbl">Кадр (канальный)</span><div class="fields"><span class="muted" style="font-size:14px">${ni===0||ni===1?'ещё не собран':'снят, будет собран заново'}</span></div></div>`;
+  document.getElementById('hdrs').innerHTML = fr + `<div class="hdr" style="${col(3)}"><span class="lbl">Пакет (сетевой)</span><div class="fields"><span class="f ${s.chg.includes('ip')?'chg':''}">IP от: ${s.ip[0]}</span><span class="f ${s.chg.includes('ip')?'chg':''}">IP кому: ${s.ip[1]}</span></div></div>`;
+  document.getElementById('ncap').innerHTML=`<span class="muted">Шаг ${ni+1} из ${S.length}.</span> ${s.t}`;
+  document.getElementById('rt').innerHTML=RT.map((r,ri)=>`<div class="tscroll"><h3>${r.name}</h3><table><thead><tr><th>Сеть</th><th>Порт (выход)</th><th>Шлюз</th></tr></thead><tbody>${r.rows.map((row,j)=>`<tr class="${s.rt&&s.rt[0]===ri&&s.rt[1]===j?'on':''}"><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td></tr>`).join('')}</tbody></table></div>`).join('');
+  document.getElementById('nback').disabled=ni===0;document.getElementById('nnext').disabled=ni===S.length-1;
+}
+document.getElementById('nnext').onclick=()=>{if(ni<S.length-1){ni++;drawN()}};
+document.getElementById('nback').onclick=()=>{if(ni>0){ni--;drawN()}};
+document.getElementById('nreset').onclick=()=>{ni=0;drawN()};
+drawN();
+
+// wireshark mock
+document.getElementById('ws').innerHTML=[
+ [1,"▸ Frame: кадр целиком — размер, интерфейс"],
+ [2,"▸ Ethernet II, Src: (MAC отправителя), Dst: (MAC получателя)"],
+ [3,"▸ Internet Protocol, Src: (IP источника), Dst: (IP назначения)"],
+ [4,"▸ Transmission Control Protocol, Src Port: …, Dst Port: … (номера портов)"],
+ [7,"▸ Hypertext Transfer Protocol: ответ сервера — код и содержимое"]
+].map(r=>`<div style="${col(r[0])}">${r[1]}</div>`).join('');
+
+// tabs
+function view(v){
+  document.getElementById('view-notes').hidden=v!=='notes';document.getElementById('view-quiz').hidden=v!=='quiz';
+  document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.view===v));window.scrollTo({top:0});
+}
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>view(t.dataset.view));
+document.getElementById('go-quiz').onclick=()=>view('quiz');
+
+// quiz
+const Q=[
+ {q:"Какие проблемы сетевой коммуникации лектор относит к архитектурным?",o:["Задержка, помехи и потери пакетов","Разные ОС и программы, разное оборудование, организационные ограничения","Только угрозы безопасности","Медленные компьютеры пользователей"],a:1,e:"Архитектурные проблемы: разнообразие систем, «зоопарк» оборудования и то, что сеть принадлежит разным организациям. Задержка и потери — проблемы технологические."},
+ {q:"Что лектор называет нормальной ситуацией для современных сетей?",o:["Полное отсутствие ошибок","Частичную потерю пакетов","Работу без маршрутизаторов","Одинаковые IP-адреса у всех узлов"],a:1,e:"Потери пакетов неизбежны, поэтому в сетях есть механизмы их обнаружения и исправления."},
+ {q:"Почему появилась модель OSI?",o:["Чтобы ускорить интернет","Производители продавали монолитные решения, и нельзя было совмещать оборудование и софт разных фирм","Чтобы заменить TCP/IP","Её придумали для курса информатики"],a:1,e:"Военные США не хотели зависеть от одного вендора, и ISO разработала открытые стандарты, чтобы собирать сети из решений разных производителей."},
+ {q:"Что значит «уровень — это чёрный ящик»?",o:["Уровень ничего не делает","Известны вход, выход и функция уровня, а как он устроен внутри, неважно","Уровень хранит данные в тайне","Уровень работает только в темноте"],a:1,e:"Внутреннее устройство скрыто, а интерфейсы между ящиками стандартизированы. Стек собирается из них, как из кубиков Lego."},
+ {q:"Сколько уровней в модели OSI и сколько в реальном стеке TCP/IP?",o:["7 и 7","7 и 4","4 и 7","5 и 3"],a:1,e:"Аналитики ISO заложили 7 уровней, в реальном стеке их 4 («строго говоря, три с половиной»)."},
+ {q:"Что, кроме заголовка, добавляется на канальном уровне?",o:["Пароль","Трейлер — признак конца кадра","Номер порта","Доменное имя"],a:1,e:"Физический уровень «неинтеллектуальный», поэтому канальный уровень сам отмечает, где кадр заканчивается."},
+ {q:"Для кого предназначена информация в заголовке уровня?",o:["Для всех уровней сразу","Для пользователя","Для того же уровня на принимающей стороне","Только для физического уровня"],a:2,e:"Логически каждый уровень общается со своим «коллегой» на другой стороне (горизонтально), хотя физически данные идут вертикально."},
+ {q:"На каком уровне данные режут на части (сегментация)?",o:["Прикладной","Сеансовый","Транспортный","Физический"],a:2,e:"До сеансового уровня сообщение растёт за счёт заголовков, а транспортный режет его на сегменты (как контейнер — на 20 «газелек»)."},
+ {q:"Зачем нужна сегментация?",o:["Чтобы данные занимали меньше места на диске","Чтобы делить канал во времени между потоками и перепосылать только испорченные куски","Чтобы шифровать данные","Чтобы назначить IP-адрес"],a:1,e:"Две причины из лекции: соседи не ждут, пока вы скачаете весь сериал, и при ошибке не нужно перекачивать весь файл."},
+ {q:"Чем протоколы в модели OSI отличаются от протоколов в реальных стеках?",o:["Ничем","В OSI уровень и протокол — одно и то же, а в реальных стеках на одном уровне бывает несколько протоколов (TCP и UDP)","В OSI протоколов больше","В реальных стеках протоколов нет"],a:1,e:"Например, на транспортном уровне работают и TCP, и UDP. Задача у них одна, решают её по-разному."},
+ {q:"VPN — пример чего?",o:["Строгой инкапсуляции","Нестрогой инкапсуляции: IP-пакет вкладывается в другой IP-пакет","Физического уровня","Сегментации"],a:1,e:"В OSI порядок вложения жёсткий, а в реальности можно вкладывать, например, сетевой уровень в сетевой."},
+ {q:"Какой протокол добавляет букву S в HTTPS и на каком уровне OSI он работает?",o:["TCP, транспортный","TLS/SSL, уровень представления","IP, сетевой","Ethernet, канальный"],a:1,e:"Уровень представления занимается сжатием и шифрованием. TLS превращает обычный протокол в защищённый."},
+ {q:"Какой уровень лектор называет «неинтеллектуальным»?",o:["Прикладной","Сетевой","Канальный","Физический"],a:3,e:"Физический уровень ничего не обрабатывает: это только спецификации проводов, разъёмов и кодирования сигнала."},
+ {q:"Что меняется, когда пакет проходит через маршрутизаторы?",o:["Меняются IP-адреса отправителя и получателя","Меняются MAC-адреса в кадре, а IP-адреса остаются прежними","Ничего не меняется","Меняется только содержимое данных"],a:1,e:"В каждой локальной сети пакет упаковывается в новый кадр со своими MAC-адресами, а IP-пакет идёт неизменным."},
+ {q:"Что значит запись в таблице маршрутизации, где порт и шлюз совпадают?",o:["Маршрут сломан","Маршрутизатор подключён к этой сети напрямую","Пакет нужно удалить","Это шлюз по умолчанию для всех"],a:1,e:"Тогда кадр отправляется прямо узлу-получателю, следующий маршрутизатор не нужен."},
+ {q:"Как узел узнаёт MAC-адрес шлюза, если знает только его IP?",o:["Спрашивает DNS","Через ARP: шлёт на всю сеть «у кого такой адрес?», отвечает только владелец","Угадывает","MAC всегда равен IP"],a:1,e:"Ответ сохраняется в ARP-кэше. Посмотреть его можно командой arp -a."},
+ {q:"Могут ли у устройств в разных локальных сетях быть одинаковые MAC-адреса?",o:["Нет, никогда","Да: MAC действует только внутри своей локальной сети","Только у маршрутизаторов","Только при VPN"],a:1,e:"На схеме из лекции у узла 1-1 и порта M2 в сети 3 одинаковый MAC, и это не мешает доставке."},
+ {q:"Почему не используют MAC-адрес как сетевой (как пытались в стеке IPX)?",o:["MAC слишком длинный","Сеть оказывается привязана к одному формату MAC и к конкретной сетевой карте","MAC нельзя прочитать","MAC меняется каждую минуту"],a:1,e:"Сменили сетевую карту — сменился сетевой адрес. Неудобно, поэтому адресацию разделили на два уровня."},
+ {q:"В каком порядке Wireshark показывает «матрёшку» пакета снаружи внутрь?",o:["HTTP → TCP → IP → Ethernet II","Ethernet II → IP → TCP → HTTP","IP → Ethernet II → HTTP → TCP","TCP → HTTP → IP → Ethernet II"],a:1,e:"Снаружи — кадр канального уровня, внутри — пакет IP, в нём — сегмент TCP, а в самом центре — сообщение HTTP."},
+];
+let qi=0,score=0,wrong=[],answered=false;
+const qroot=document.getElementById('quiz'), total=Q.length+1;
+function head(){return `<div class="progress"><span>Задание ${Math.min(qi+1,total)} из ${total}</span><div class="bar"><i style="width:${qi/total*100}%"></i></div><span>Верно: ${score}</span></div>`}
+function renderQ(){
+  answered=false;
+  if(qi<Q.length){const x=Q[qi];
+    qroot.innerHTML=head()+`<div class="qcard"><h3>${x.q}</h3><div class="opts">${x.o.map((o,i)=>`<button class="opt" data-i="${i}">${o}</button>`).join('')}</div><div id="ex"></div></div>`;
+    qroot.querySelectorAll('.opt').forEach(b=>b.onclick=()=>pick(+b.dataset.i));
+  } else if(qi===Q.length) renderOrder(); else renderResult();
+}
+function pick(i){
+  if(answered)return;answered=true;const x=Q[qi],ok=i===x.a;if(ok)score++;else wrong.push(x);
+  qroot.querySelectorAll('.opt').forEach((b,j)=>{b.disabled=true;if(j===x.a)b.classList.add('right');else if(j===i)b.classList.add('wrong');});
+  document.getElementById('ex').innerHTML=`<div class="explain"><b>${ok?'Верно.':'Неверно.'}</b> ${x.e}</div><div class="controls" style="margin-top:10px"><button class="btn" id="nx">Дальше</button></div>`;
+  const nx=document.getElementById('nx');nx.onclick=()=>{qi++;renderQ()};nx.focus();
+}
+function renderOrder(){
+  let chosen=[];const names=L.map(l=>l.name);const shuffled=[...names].sort(()=>Math.random()-.5);
+  const nameOf=n=>L.find(l=>l.n===n).name;
+  function draw(done){
+    const slots=[1,2,3,4,5,6,7].map(n=>{const nm=chosen[n-1];let c='';if(done)c=nm===nameOf(n)?'ok':'no';
+      return `<div class="slot ${c}"><span class="n">${n}</span><span>${nm||'<span class="muted">…</span>'}${done&&c==='no'?` <span class="muted">→ ${nameOf(n)}</span>`:''}</span></div>`}).join('');
+    qroot.innerHTML=head()+`<div class="qcard"><h3>Финальное задание: расставьте уровни OSI по порядку, начиная с 1</h3>
+      <p class="muted">Нажимайте на названия по очереди: первое нажатие — уровень 1, второе — уровень 2 и так далее.</p>
+      <div class="pool">${shuffled.filter(s=>!chosen.includes(s)).map(s=>`<button class="pick">${s}</button>`).join('')}</div>
+      <div class="order">${slots}</div>
+      <div class="controls">${done?'<button class="btn" id="fin">Посмотреть результат</button>':'<button class="btn ghost" id="undo">Отменить последний</button>'}</div></div>`;
+    if(!done){
+      qroot.querySelectorAll('.pick').forEach(b=>b.onclick=()=>{chosen.push(b.textContent);
+        if(chosen.length===7){const ok=chosen.every((c,i)=>c===nameOf(i+1));if(ok)score++;else wrong.push({q:"Порядок уровней OSI",e:"1 Физический → 2 Канальный → 3 Сетевой → 4 Транспортный → 5 Сеансовый → 6 Представления → 7 Прикладной."});draw(true);} else draw(false);});
+      const u=document.getElementById('undo');u.disabled=!chosen.length;u.onclick=()=>{chosen.pop();draw(false)};
+    } else document.getElementById('fin').onclick=()=>{qi++;renderQ()};
+  }
+  draw(false);
+}
+function renderResult(){
+  const pct=Math.round(score/total*100);
+  const msg=pct>=90?'Отлично, можно переходить к лекции 2.':pct>=70?'Хорошо. Посмотрите разбор ошибок ниже.':'Стоит ещё раз пройти конспект (особенно разделы с ошибками) и попробовать снова.';
+  qroot.innerHTML=`<div class="qcard result"><div class="eyebrow">Результат</div><div class="score">${score} / ${total}</div><p>${msg}</p>
+   ${wrong.length?`<div class="review"><b>Над чем поработать:</b>${wrong.map(w=>`<div><b>${w.q}</b><br>${w.e}</div>`).join('')}</div>`:''}
+   <div class="controls"><button class="btn" id="again">Пройти заново</button><button class="btn ghost" id="back">К конспекту</button></div></div>`;
+  document.getElementById('again').onclick=()=>{qi=0;score=0;wrong=[];renderQ()};
+  document.getElementById('back').onclick=()=>view('notes');
+}
+renderQ();
+</script>
+
+</body>
+</html>
