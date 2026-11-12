@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>TCP/IP: лекция 6</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column; the 7-layer stack and the 3-network route are the two signature visuals */
+:root{
+  --bg:#f5f7fa; --surface:#ffffff; --fg:#17202e; --muted:#5a6678; --line:#dbe1ea; --accent:#2f5bd3; --accent-soft:#e6ecfb;
+  --good:#1d8a52; --good-soft:#e2f4ea; --bad:#c23b32; --bad-soft:#fbe7e5; --hl:#f6d34a; --hl-soft:#fff6cf;
+  --l7:#7a4cc2; --l6:#a1459a; --l5:#c4466a; --l4:#d06a2a; --l3:#b48a12; --l2:#2f8f5b; --l1:#2f6fb3;
+  --l7s:#f0eafa; --l6s:#f7e9f5; --l5s:#fbe8ee; --l4s:#fcede3; --l3s:#f8f1dc; --l2s:#e3f3ea; --l1s:#e4eef9;
+  --display:"Unbounded", "Golos Text", system-ui, sans-serif;
+  --body:"Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10151d; --surface:#18202b; --fg:#e7ecf3; --muted:#9aa6b8; --line:#2a3443; --accent:#7f9df0; --accent-soft:#1f2b45;
+  --good:#5cc68b; --good-soft:#163325; --bad:#ef7d74; --bad-soft:#3a1c1a; --hl:#e3c058; --hl-soft:#3a3218;
+  --l7:#b18cf0; --l6:#e08ad6; --l5:#f08aa8; --l4:#f3a06a; --l3:#e3c058; --l2:#6fcf98; --l1:#73aef0;
+  --l7s:#271f38; --l6s:#2f1d2d; --l5s:#33202a; --l4s:#33261d; --l3s:#2f2a18; --l2s:#18301f; --l1s:#18273a;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10151d; --surface:#18202b; --fg:#e7ecf3; --muted:#9aa6b8; --line:#2a3443; --accent:#7f9df0; --accent-soft:#1f2b45;
+  --good:#5cc68b; --good-soft:#163325; --bad:#ef7d74; --bad-soft:#3a1c1a; --hl:#e3c058; --hl-soft:#3a3218;
+  --l7:#b18cf0; --l6:#e08ad6; --l5:#f08aa8; --l4:#f3a06a; --l3:#e3c058; --l2:#6fcf98; --l1:#73aef0;
+  --l7s:#271f38; --l6s:#2f1d2d; --l5s:#33202a; --l4s:#33261d; --l3s:#2f2a18; --l2s:#18301f; --l1s:#18273a;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+.wrap{max-width:860px;margin:0 auto}
+h1,h2,h3{text-wrap:balance;line-height:1.25}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,5vw,38px);margin:0}
+h2{font-family:var(--display);font-weight:500;font-size:clamp(20px,3.4vw,25px);margin:0}
+h3{font-size:17px;margin:0}
+p{margin:0;max-width:68ch}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono);font-size:.92em}
+a{color:var(--accent)}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+header.top{padding-block:40px 24px;display:grid;gap:12px}
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--muted)}
+
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;flex-wrap:wrap;gap:6px;padding-block:10px;border-bottom:1px solid var(--line);margin-bottom:28px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.tab{font:600 15px var(--body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 16px;border-radius:999px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+section.block{display:grid;gap:14px;margin-bottom:48px}
+.kicker{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.time{font-family:var(--mono);font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:4px;align-content:start;min-width:0}
+.card b{font-size:15px}
+.card span{font-size:14px;color:var(--muted)}
+.group-label{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-top:4px}
+
+.quote{border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:10px 14px;font-size:15px}
+
+/* history timeline */
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.flow .card{border-top:4px solid var(--accent)}
+
+/* OSI stack */
+.osi{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px;align-items:start}
+@media (max-width:660px){.osi{grid-template-columns:1fr}}
+.stack{display:grid;gap:5px}
+.layer{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:10px;width:100%;text-align:left;
+  font:500 15px var(--body);color:var(--fg);background:var(--ls);border:1px solid transparent;border-left:6px solid var(--lc);
+  border-radius:8px;padding:9px 12px;cursor:pointer}
+.layer .n{font-family:var(--mono);font-weight:600;color:var(--lc)}
+.layer .pdu{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.layer[aria-pressed="true"]{border-color:var(--lc);box-shadow:0 0 0 1px var(--lc) inset}
+.detail{background:var(--surface);border:1px solid var(--line);border-top:6px solid var(--lc);border-radius:10px;padding:16px;display:grid;gap:10px;min-width:0}
+.detail dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:15px}
+.detail dt{color:var(--muted);font-size:13px;padding-top:2px}
+.detail dd{margin:0}
+.chip{display:inline-block;font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:999px;background:var(--ls);color:var(--fg);border:1px solid var(--lc);margin:0 4px 4px 0}
+.lect{font-size:14px;background:var(--accent-soft);border-radius:8px;padding:8px 10px}
+
+.tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+tr:last-child td{border-bottom:0}
+
+/* encapsulation */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:14px;min-width:0}
+.packet{display:flex;flex-wrap:wrap;gap:0;font-family:var(--mono);font-size:13px;min-height:46px}
+.seg{padding:12px 10px;border:1px solid var(--lc);background:var(--ls);color:var(--fg);display:flex;align-items:center}
+.seg+.seg{border-left:0}
+.seg:first-child{border-radius:8px 0 0 8px}.seg:last-child{border-radius:0 8px 8px 0}.seg:only-child{border-radius:8px}
+.seg.new{animation:pop .35s ease-out}
+@keyframes pop{from{transform:translateY(-6px);opacity:.3}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.seg.new{animation:none}}
+.caption{font-size:15px;min-height:3.2em}
+.controls{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:600 15px var(--body);border:1px solid var(--fg);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:8px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--fg);border-color:var(--line)}
+.btn:disabled{opacity:.4;cursor:default}
+
+/* segmentation */
+.segm{display:grid;grid-template-columns:auto 1fr;gap:10px 14px;align-items:center}
+.box{height:30px;border-radius:6px;background:var(--l4s);border:1px solid var(--l4)}
+.pieces{display:flex;gap:4px;flex-wrap:wrap}
+.pieces i{display:block;width:34px;height:30px;border-radius:5px;background:var(--l4s);border:1px solid var(--l4)}
+.pieces i.bad{background:var(--bad-soft);border-color:var(--bad)}
+
+/* network diagram */
+.netwrap{overflow-x:auto}
+.netwrap svg{display:block;width:100%;min-width:620px;height:auto}
+.net-ellipse{fill:var(--surface);stroke:var(--line);stroke-width:2}
+.net-ellipse.on{stroke:var(--accent);stroke-width:3}
+.net-label{fill:var(--muted);font:600 13px var(--body)}
+.node{fill:var(--l2s);stroke:var(--l2);stroke-width:2}
+.node.on{fill:var(--hl-soft);stroke:var(--hl);stroke-width:3}
+.router{fill:var(--l3s);stroke:var(--l3);stroke-width:2}
+.router.on{fill:var(--hl-soft);stroke:var(--hl);stroke-width:3}
+.t{fill:var(--fg);font:600 12px var(--mono)}
+.ts{fill:var(--muted);font:500 11px var(--mono)}
+.link{stroke:var(--line);stroke-width:2}
+.dot{fill:var(--accent)}
+@media (prefers-reduced-motion:no-preference){.dot{transition:cx .5s ease,cy .5s ease}}
+.hdrs{display:grid;gap:8px}
+.hdr{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center;font-size:14px}
+@media (max-width:520px){.hdr{grid-template-columns:1fr}}
+.hdr .lbl{font-weight:600}
+.fields{display:flex;flex-wrap:wrap;gap:6px}
+.f{font-family:var(--mono);font-size:13px;border:1px solid var(--lc);background:var(--ls);border-radius:6px;padding:4px 8px}
+.f.chg{background:var(--hl-soft);border-color:var(--hl);box-shadow:0 0 0 1px var(--hl) inset}
+.rt{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.rt table{font-family:var(--mono);font-size:13px}
+.rt tr.on td{background:var(--hl-soft)}
+.rt h3{font-size:14px;padding:8px 10px 0}
+
+/* wireshark mock */
+.ws{font-family:var(--mono);font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+.ws div{padding:6px 12px;border-bottom:1px solid var(--line);white-space:nowrap;border-left:5px solid var(--lc)}
+.ws div:last-child{border-bottom:0}
+
+.recap{display:grid;gap:8px;padding:0;margin:0;list-style:none}
+.recap li{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+
+/* quiz */
+.qwrap{display:grid;gap:16px}
+.progress{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--muted)}
+.bar{flex:1;height:8px;background:var(--line);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:12px}
+.qcard h3{font-size:18px}
+.opts{display:grid;gap:8px}
+.opt{font:500 15px var(--body);text-align:left;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:11px 14px;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt.right{background:var(--good-soft);border-color:var(--good)}
+.opt.wrong{background:var(--bad-soft);border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.explain{font-size:15px;border-radius:8px;padding:10px 12px;background:var(--accent-soft)}
+.order{display:grid;gap:6px}
+.pool{display:flex;flex-wrap:wrap;gap:6px}
+.pick{font:500 14px var(--body);border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:999px;padding:7px 12px;cursor:pointer}
+.slot{display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:center;font-size:15px;min-height:38px;border:1px dashed var(--line);border-radius:8px;padding:6px 10px}
+.slot .n{font-family:var(--mono);font-weight:600;color:var(--muted)}
+.slot.ok{border-style:solid;border-color:var(--good);background:var(--good-soft)}
+.slot.no{border-style:solid;border-color:var(--bad);background:var(--bad-soft)}
+.result{text-align:center;display:grid;gap:10px;justify-items:center}
+.score{font-family:var(--display);font-size:46px;font-weight:700}
+.review{display:grid;gap:6px;text-align:left;width:100%}
+.review div{font-size:14px;padding:8px 10px;border-radius:8px;background:var(--bad-soft)}
+</style>
+<style>
+.eyebrow a{color:var(--muted);text-decoration:none}.eyebrow a:hover{color:var(--accent)}
+.sel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.sel-grid label{display:grid;gap:4px;font-size:13px;color:var(--muted);font-weight:600}
+select,.inp{font:500 15px var(--body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+.inp.mono{font-family:var(--mono);letter-spacing:.08em}
+.lbl{font-size:13px;color:var(--muted);font-weight:600}
+.steps{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch}
+.steps .st{flex:1 1 130px;background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--lc);border-radius:8px;padding:8px 10px;font-size:14px;display:grid;gap:2px;align-content:start}
+.steps .st small{color:var(--muted);font-size:12px}
+.steps .st.cond{border-style:dashed;border-top-style:solid}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.sliders label{display:grid;gap:4px;font-size:14px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+svg{width:100%;height:auto;display:block}
+.simlog{display:grid;gap:4px;font-family:var(--mono);font-size:13px;max-height:220px;overflow:auto}
+.simlog div{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+.simlog .win{border-color:var(--good);background:var(--good-soft)}
+.simlog .col{border-color:var(--bad);background:var(--bad-soft)}
+.ok{color:var(--good);font-weight:600}.warn{color:var(--l4);font-weight:600}.err{color:var(--bad);font-weight:600}
+.bitbox{display:inline-grid;gap:2px;text-align:center;font-family:var(--mono);font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;margin:2px}
+.bitbox b{color:var(--accent)}
+td.hl{background:var(--hl-soft)}
+.dmb{fill:none;stroke-width:1.5}
+.pipe{display:grid;gap:6px}
+.pipe .row{display:grid;grid-template-columns:170px 1fr 120px;gap:10px;align-items:center;font-size:14px}
+@media (max-width:520px){.pipe .row{grid-template-columns:1fr 90px}.pipe .row .track{grid-column:1/-1;grid-row:2}}
+.track{height:14px;background:var(--line);border-radius:999px;overflow:hidden}
+.track i{display:block;height:100%;background:var(--accent);border-radius:999px}
+.pipe .num{font-family:var(--mono);font-size:13px;text-align:right}
+.encw{display:grid;gap:0}
+.encl{border:2px solid var(--lc);background:var(--ls);border-radius:8px;padding:8px 10px;display:grid;gap:6px;font-size:14px}
+.encl>b{font-size:13px}
+.encl .core{background:var(--surface);border:1px dashed var(--line);border-radius:6px;padding:6px 8px;font-family:var(--mono);font-size:12px}
+table td,table th{padding:6px 10px;text-align:left;vertical-align:top}
+.cmp{display:flex;flex-wrap:wrap;gap:4px 12px;font-family:var(--mono);font-size:13px;margin:2px 0}
+.cmp span{padding:1px 2px;border-radius:3px}
+.cmp .w{color:var(--muted)}.cmp .m{background:var(--good-soft)}.cmp .x{background:var(--bad-soft);color:var(--bad);font-weight:600}
+.cmp .oc{white-space:nowrap}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:4px 10px;font-size:14px;margin-top:6px}
+.kv dt{color:var(--muted)}.kv dd{margin:0;font-family:var(--mono);word-break:break-all}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow"><a href="index.html">← Все лекции</a> · Компьютерные сети · Лекция 6</div>
+  <h1>Обзор стека TCP/IP</h1>
+  <p class="muted">Конспект по расшифровке лекции А. Береснева (ИТМО), пересказанный простыми словами. У разделов стоит время в видео. В конспекте семь интерактивных схем, во вкладке «Тест» 26 заданий.</p>
+  <div class="note"><a href="https://www.youtube.com/watch?v=dv6B8_vYezI" target="_blank" rel="noopener">Открыть лекцию на YouTube</a> · 1 ч 17 мин</div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-view="notes">Конспект</button>
+  <button class="tab" role="tab" aria-selected="false" data-view="quiz">Тест</button>
+</nav>
+
+<main id="view-notes">
+
+  <section class="block">
+    <div class="kicker"><h2>1. Что такое стек TCP/IP</h2><span class="time">1:28</span></div>
+    <p>TCP/IP — это иерархический набор протоколов: на каждом уровне работает не один протокол, а целое семейство. Стек <b>открытый</b> (за реализацию никому не платят, патентов нет) и <b>независимый от платформы</b>. Главное его достоинство: он хорошо отвлечён от канального уровня, поэтому работает поверх всего, что умеет передавать данные. Как Doom запускают на всём, у чего есть экран и процессор.</p>
+    <div class="grid">
+      <div class="card"><b>Три с половиной уровня</b><span>Уровней четыре, но физический TCP/IP не регламентирует: как строить Ethernet, он не учит. Он описывает только стык: как IP передавать поверх канального уровня, как отображать канальные адреса на сетевые, как делать multicast.</span></div>
+      <div class="card"><b>Нестрогая инкапсуляция</b><span>В модели OSI порядок строгий. Здесь можно упаковать IP-пакет в IP-пакет, кадр в IP, потом добавить MPLS. Это хаос, но именно он даёт туннели (VPN и подобное).</span></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>2. Откуда он взялся</h2><span class="time">3:03</span></div>
+    <p>Понимание истории объясняет, почему решения именно такие. В конце 60-х — начале 70-х американское агентство ARPA делало проект ARPANET: сеть управления, которая переживёт потерю части линий связи. Если бомбят часть сети, связь должна сохраниться, поэтому протоколы проектировались устойчивыми к смене топологии.</p>
+    <div class="flow">
+      <div class="card"><b>Конец 60-х</b><span>ARPANET: сеть, устойчивая к потере линий.</span></div>
+      <div class="card"><b>Начало 80-х</b><span>Сначала это был один большой программный монолит. Разработчики посмотрели на модель OSI и разбили его на уровни.</span></div>
+      <div class="card"><b>1983</b><span>TCP/IP входит в поставку Berkeley UNIX и бесплатно расходится по университетам. Остальные платили за стеки, а тут всё готово. Появился первый интернет между вузами.</span></div>
+      <div class="card"><b>Начало 90-х</b><span>Тим Бернерс-Ли придумывает WWW, и мир меняется.</span></div>
+    </div>
+    <p class="muted">Конкуренты (IPX/SPX и другие) канули в лету. Сегодня о других стеках почти не говорят.</p>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>3. Как данные идут по стеку</h2><span class="time">9:40</span></div>
+    <p>Приложение выдаёт <b>символьный поток</b>: в нём и данные, и команды-разметка. Дальше он попадает на транспортный уровень, где два главных протокола.</p>
+    <div class="grid">
+      <div class="card"><b>TCP</b><span>Надёжная связь: гарантирует доставку, порядок и целостность, устанавливает и закрывает соединение. Его сообщение называется <b>сегмент</b>.</span></div>
+      <div class="card"><b>UDP</b><span>Отправил на нужный порт — и всё: ни соединения, ни подтверждений. Только проверка целостности заголовка. Сообщение — <b>датаграмма</b>. Лектор: как курсант, у которого все пули вылетели из ствола, а что мимо цели — «проблемы на вашей стороне».</span></div>
+    </div>
+    <div class="panel">
+      <h3>Упаковка данных по уровням</h3>
+      <div class="sel-grid">
+        <label>Транспортный протокол<select id="encP"><option value="tcp">TCP</option><option value="udp">UDP</option></select></label>
+        <label>Как далеко упаковать: <b id="vEnc"></b><input type="range" id="sEnc" min="1" max="4" value="4"></label>
+      </div>
+      <div id="enc" class="encw"></div>
+      <div class="caption" id="encres"></div>
+    </div>
+    <div class="note"><b>Подвох с собеседований.</b> На вопрос «какой протокол даёт надёжную доставку?» правильный ответ звучит как «TCP, но уточните, чистые протоколы или нет». Поверх UDP можно построить надёжную передачу, как делает QUIC (его придумал Google). Подробно об этом в лекции по транспортному уровню.</div>
+    <p class="muted">Не всё упаковывается в IP. ARP, например, идёт прямо в канальный уровень, а ICMP формально сетевой, но передаётся внутри IP.</p>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>4. Кто управляет стеком: RFC и IETF</h2><span class="time">14:30</span></div>
+    <p><b>RFC</b> (Request For Comments, «запрос на комментарии») — документы, которые описывают, как должен работать конкретный протокол, а ещё организационные регламенты. Развитие координирует комитет <b>IETF</b>: принимает заявки на новые RFC, проводит через обсуждение, следит, чтобы документы получили нужный статус (от предложенного до запрещённого к использованию).</p>
+    <div class="quote">Если хотите разобраться в протоколе, читайте не лекции и не «Википедию», а RFC: там написано ровно то, как должно быть. Иногда сказано «оставляем на усмотрение производителя», тогда смотрите документацию производителя или ядра Linux.</div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>5. Адреса на каждом уровне</h2><span class="time">16:52</span></div>
+    <div class="grid">
+      <div class="card"><b>Прикладной</b><span>Мнемонические адреса: доменные имена (DNS). Они нужны людям, чтобы не умирать под цифрами. Браузер просит DNS-клиент, тот спрашивает свой DNS-сервер и возвращает IP. Знать имя нужно и самому серверу, если на нём много «виртуальных сайтов»: по имени в заголовке HTTP он выбирает сайт.</span></div>
+      <div class="card"><b>Транспортный</b><span><b>Порт</b> — номер очереди, которую занимает процесс на хосте. Всё, что процесс пишет в сеть, идёт через этот номер, всё, что приходит, ОС кладёт в эту очередь. Порт — адрес приложения на хосте.</span></div>
+      <div class="card"><b>Сетевой</b><span>IPv4 или IPv6: адрес хоста.</span></div>
+      <div class="card"><b>Канальный</b><span>MAC-адреса. Для unicast и для multicast есть особые.</span></div>
+    </div>
+    <p><b>Сокет</b> — пара «IP-адрес : порт». Это универсальный адрес приложения в IP-сети. А <b>URL</b> — составной адрес из нескольких частей.</p>
+    <div class="panel">
+      <h3>Разбор URL</h3>
+      <label class="lbl">Введите адрес<input class="inp mono" id="url" value="https://user:pass@example.com:8443/docs/page.html?lang=ru#top" aria-label="URL"></label>
+      <div id="urlres"></div>
+    </div>
+    <p class="muted">Обычно пишут сокращённо: протокол и доменное имя.</p>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>6. Как устанавливается соединение</h2><span class="time">22:15</span></div>
+    <p>Сильно упрощая (трёхэтапное рукопожатие TCP обсудим позже):</p>
+    <div class="steps" id="steps6"></div>
+    <div class="grid">
+      <div class="card"><b>Сервер просит конкретный порт</b><span>Веб-сервер читает конфиг, видит порт 80 и просит у ОС: «мне нужен 80/TCP». ОС отдаёт порт и следит, чтобы он принадлежал только ему.</span></div>
+      <div class="card"><b>Клиент просит любой порт</b><span>Браузер просит у ОС какой-нибудь порт, получает произвольный, больше 1024 (например 29384).</span></div>
+      <div class="card"><b>Ответ идёт зеркально</b><span>В ответном сегменте порты отправителя и получателя меняются местами, и в IP-пакете тоже меняются адреса.</span></div>
+    </div>
+    <h3>Что видит ОС: состояния сокетов</h3>
+    <p>На Linux это команда <span class="mono">ss</span> (раньше <span class="mono">netstat</span>), на Windows — <span class="mono">netstat</span>. Служба SSH слушает порт 22. Пока никто не подключился, сокет в состоянии <b class="mono">LISTEN</b>, а внешний адрес (пир) неопределён. Звёздочка в адресе значит «слушаю все IP-адреса хоста». Если включён IPv6, сокетов два: для IPv4 и для IPv6.</p>
+    <div class="panel">
+      <h3>Подключаем клиентов к SSH на сервере</h3>
+      <div class="controls" id="sockBtns">
+        <button class="btn" id="sockAdd">Подключить клиента</button>
+        <button class="btn ghost" id="sockDel">Закрыть последнее</button>
+        <button class="btn ghost" id="sockView" data-v="srv">Показать: сервер</button>
+      </div>
+      <div class="tscroll"><table>
+        <thead><tr><th>Состояние</th><th>Локальный адрес:порт</th><th>Пир (удалённый)</th></tr></thead>
+        <tbody id="sockTab"></tbody>
+      </table></div>
+      <div class="caption" id="sockres"></div>
+    </div>
+    <div class="grid">
+      <div class="card"><b>Копия сокета</b><span>Когда клиент подключается, сервер копирует слушающий сокет и в копии уточняет локальный адрес и адрес клиента. Слушающий сокет остаётся и ждёт следующих.</span></div>
+      <div class="card"><b>Почему порт клиента случайный</b><span>Иначе на машине можно было бы запустить только один клиент протокола. А так тысяча соединений, у каждого свой порт. Единственное известное исключение: DHCP.</span></div>
+      <div class="card"><b>Соединение — это две пары</b><span>«IP:порт» клиента и «IP:порт» сервера. На клиенте и на сервере картина зеркальная.</span></div>
+      <div class="card"><b>UDP-сокеты</b><span>У них никогда нет внешнего пира: соединения нет. Мы знаем только свой порт, а дальше разбираемся сами, что пришло.</span></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>7. Типы рассылок</h2><span class="time">40:02</span></div>
+    <div class="grid">
+      <div class="card"><b>Unicast</b><span>Один к одному: основной тип. И IP-адрес, и MAC получателя адресуют конкретный хост.</span></div>
+      <div class="card"><b>Broadcast</b><span>Один ко всем, даже тем, кто не хочет. На канальном уровне это специальный MAC, и коммутатор рассылает такой кадр по всем портам.</span></div>
+      <div class="card"><b>Multicast</b><span>Один к группе. Групповому адресу соответствует набор хостов. Роутер или коммутатор размножает пакет только на членов группы.</span></div>
+      <div class="card"><b>Anycast</b><span>Адрес принадлежит нескольким хостам, но пакет получает только <b>один</b>, ближайший. Говорят, так устроен и 8.8.8.8 у Google: вам отвечает ближайший сервер. Лектор сам это не проверял.</span></div>
+    </div>
+    <div class="panel">
+      <h3>Потоковое видео на много зрителей</h3>
+      <label class="sliders"><span class="lbl">Зрителей: <b id="vMc"></b></span><input type="range" id="sMc" min="2" max="100" value="50"></label>
+      <div class="pipe" id="mcres"></div>
+      <div class="caption" id="mcnote"></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>8. Структура IPv4-адреса: классы и маски</h2><span class="time">46:48</span></div>
+    <p>IPv4-адрес — просто 32-битное число. Точки только для удобства человека. В нём две части: <b>адрес сети</b> (чтобы довести пакет до нужной локалки) и <b>адрес узла</b> (чтобы довести его в этой локалке до хоста). Границу проводят двумя способами.</p>
+    <div class="grid">
+      <div class="card"><b>Классовая адресация (древняя)</b><span>Смотрим на первые биты первого байта. <b>A</b>: начинается с 0, сеть /8. <b>B</b>: с 10, сеть /16. <b>C</b>: с 110, сеть /24. <b>D</b>: с 1110, это multicast. <b>E</b>: с 1111, на запас. Сегодня не используется, но помогает понять, какие адреса для хостов, а какие для multicast.</span></div>
+      <div class="card"><b>Маски (бесклассовая)</b><span>Рядом с адресом задают маску: единицы там, где сеть, нули там, где узел. Побитовое «И» адреса и маски даёт адрес сети. Короткая запись: /24 — число единиц. Единицы идут подряд: «вперемешку» гибкости не даёт, одни проблемы.</span></div>
+    </div>
+    <div class="quote">Адреса IPv4 в 2011 году закончились. Класс E, который берегли на этот случай, так и не открыли: перешли на IPv6.</div>
+    <div class="panel">
+      <h3>Калькулятор IPv4</h3>
+      <div class="sel-grid">
+        <label>IP-адрес<input class="inp mono" id="ipa" value="192.168.1.77"></label>
+        <label>Префикс: /<b id="vPf"></b><input type="range" id="sPf" min="8" max="32" value="26"></label>
+      </div>
+      <div id="ipres"></div>
+    </div>
+    <h3>Правила, которые важно помнить</h3>
+    <ul class="recap">
+      <li>Если все биты узла — нули, это <b>адрес сети</b>. Если все единицы — <b>широковещательный</b> адрес. Хостам их назначать нельзя. Поэтому в /30 всего 2 рабочих адреса из 4.</li>
+      <li>Уменьшая маску на бит, получаем сеть вдвое больше. Если делить сеть, получаются <b>вложенные подсети</b> (дерево). Адресные пространства разных локалок не должны пересекаться и не должны быть вложены друг в друга.</li>
+      <li><b>Зачем хосту маска.</b> (1) Понять, назначение в моём Lan или за шлюзом. (2) Проверить, что указанный шлюз в моём Lan (иначе до него не достучаться). (3) Автоматически сформировать свой адрес и маску.</li>
+    </ul>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>9. Особые адреса IPv4</h2><span class="time">56:10</span></div>
+    <div class="tscroll"><table>
+      <thead><tr><th>Адрес</th><th>Что это</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">0.0.0.0</td><td>Неопределённый адрес: «я свой адрес ещё не знаю». Нули в поле сети: назначение в нашей локалке.</td></tr>
+        <tr><td class="mono">255.255.255.255 / все единицы в узле</td><td>Широковещательный адрес.</td></tr>
+        <tr><td class="mono">127.0.0.0/8</td><td>Loopback: поговорить с самим собой. Привычный 127.0.0.1, но можно любой из 2<sup>24</sup> адресов этой сети.</td></tr>
+        <tr><td class="mono">169.254.0.0/16</td><td>Автоконфигурация: адрес, который хост выбирает сам, если DHCP-сервера нет.</td></tr>
+        <tr><td class="mono">10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16</td><td>«Серые» (частные) адреса по RFC 1918. Не маршрутизируются в интернете. Для изолированной локалки берут именно их. 10.0.0.0/8 удобен тем, что адресов на всех хватает.</td></tr>
+        <tr><td class="mono">224.0.0.0/4</td><td>Multicast (бывший класс D).</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted">В IPv6 loopback всего один: <span class="mono">::1</span>. Незачем иметь 16 миллионов адресов, чтобы говорить с собой.</p>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>10. Wildcard-маска</h2><span class="time">1:00:24</span></div>
+    <p>Это «маска наоборот». <b>Ноль</b> в разряде значит «в этом разряде адрес должен совпасть с образцом», <b>единица</b> — «здесь может быть что угодно». Применяют в файерволах и маршрутизаторах (Cisco), чтобы писать компактные правила. И единицы в ней не обязаны идти подряд.</p>
+    <div class="quote"><b>Пример лектора.</b> Заблокировать все нечётные адреса сети /24. Без wildcard — 128 правил (по одному на каждый нечётный адрес). С wildcard — одно: <span class="mono">access-list 123 deny ip 192.168.0.1 0.0.0.254</span>. Последний бит образца — единица и должен совпасть, остальные биты в последнем байте не важны (254 = 11111110), значит, подходят все нечётные.</div>
+    <div class="panel">
+      <h3>Совпадает ли адрес с правилом?</h3>
+      <div class="sel-grid">
+        <label>Образец<input class="inp mono" id="wP" value="192.168.0.1"></label>
+        <label>Wildcard<input class="inp mono" id="wW" value="0.0.0.254"></label>
+        <label>Проверяемый адрес<input class="inp mono" id="wA" value="192.168.0.37"></label>
+      </div>
+      <div class="controls" id="wEx"></div>
+      <div id="wres"></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>11. IPv6</h2><span class="time">1:03:20</span></div>
+    <p>Адрес — 128 бит. Пишут в шестнадцатеричном виде, 8 групп по 4 цифры через двоеточие. Есть два сокращения: убрать ведущие нули в группе и заменить <b>одну</b> самую длинную цепочку нулевых групп на <span class="mono">::</span> (только один раз, иначе не раскодировать).</p>
+    <div class="panel">
+      <h3>Сокращение и расширение адреса</h3>
+      <label class="lbl">IPv6-адрес<input class="inp mono" id="v6" value="2001:0db8:0000:0000:0000:ff00:0042:8329" aria-label="IPv6"></label>
+      <div class="controls" id="v6Ex"></div>
+      <div id="v6res"></div>
+    </div>
+    <p>Адрес тоже делится на префикс и идентификатор интерфейса. Разработчики надеялись, что всегда будет по 64 бита, но жизнь богаче: префиксы переменной длины, и граница не обязана проходить по границе 4-битной группы.</p>
+    <h3>Типы адресов</h3>
+    <div class="grid">
+      <div class="card"><b>Global unicast</b><span>Начинается на 2 или 3. «Белые» адреса интернета. Префикс устроен семантически: регион, региональный регистратор (RIR) или крупный провайдер, клиент, подсеть, дальше идентификатор интерфейса. Его часто строят из MAC-адреса, а это небезопасно: по белому IP можно узнать ваш MAC. К счастью, не обязательно.</span></div>
+      <div class="card"><b>Link-local</b><span>Начинается на <span class="mono">fe80</span>. Есть у <b>каждого</b> IPv6-узла: включили IPv6, и адрес образовался сам. Нужен для работы самого протокола. В конце часто пишут номер интерфейса (<span class="mono">%19</span>).</span></div>
+      <div class="card"><b>Unique local (ULA)</b><span>Начинается на <span class="mono">fd</span> или <span class="mono">fc</span> (RFC 4193). Аналог «серых» для локальных сетей без интернета. Изначально хотели раздавать часть таких адресов за деньги, чтобы исключить пересечения (две компании после слияния обнаружили, что выбрали одинаковые серые подсети). Идея не взлетела: берут бесплатный диапазон со случайной частью.</span></div>
+      <div class="card"><b>Multicast</b><span>Адреса группы хостов, они регламентированы заранее. <span class="mono">ff02::1</span> — все IPv6-узлы канала, <span class="mono">ff02::2</span> — все роутеры канала.</span></div>
+      <div class="card"><b>Anycast</b><span>Адрес нескольких хостов, ответит ближайший.</span></div>
+      <div class="card"><b>Служебные</b><span><span class="mono">::1</span> — loopback, <span class="mono">::</span> — неопределённый адрес.</span></div>
+    </div>
+    <div class="quote"><b>Broadcast в IPv6 нет.</b> Его убрали намеренно: в большой плоской сети из 10 тысяч компьютеров широковещание сожрало бы всю полосу и заставило бы все узлы разбирать лишние служебные сообщения. Вместо него multicast: кадр на <span class="mono">ff02::1</span> получат только IPv6-хосты, а «чистые» IPv4-хосты его не увидят. Ещё одно удобство: несколько шлюзов по умолчанию на канале средствами IPv6 делается легко, а в IPv4 — костылями.</div>
+    <p class="muted">Нормально, когда на интерфейсе несколько IPv6-адресов (минимум link-local и глобальный). Параллельно IPv4 и IPv6 пытались использовать, сейчас это забыли.</p>
+  </section>
+
+  <section class="block">
+    <h2>Главное за 30 секунд</h2>
+    <ul class="recap">
+      <li>TCP/IP — открытый стек из 3,5 уровней: физический он не регламентирует, а порядок инкапсуляции нестрогий.</li>
+      <li>Данные идут: символьный поток → сегмент TCP или датаграмма UDP → IP-пакет → кадр. TCP надёжный, UDP «выстрелил и забыл».</li>
+      <li>Стандарты описывают RFC, развитием занимается IETF.</li>
+      <li>Адреса: имя (DNS), порт, IP, MAC. Сокет — IP:порт. Соединение — пара сокетов.</li>
+      <li>Сервер слушает известный порт (LISTEN), клиент берёт случайный порт больше 1024, при соединении сервер копирует сокет.</li>
+      <li>Рассылки: unicast, broadcast, multicast, anycast. В IPv6 broadcast нет.</li>
+      <li>IP-адрес = сеть + узел. Маска нужна хосту, чтобы понять, свой это Lan или шлюз. Адрес сети и broadcast хостам не назначают.</li>
+      <li>Есть особые адреса: 0.0.0.0, 127/8, 169.254/16, «серые» RFC 1918. В IPv6: fe80 (link-local), fd/fc (ULA), 2/3 (global), ::1.</li>
+    </ul>
+    <div><button class="btn" id="go-quiz">Пройти тест</button></div>
+  </section>
+</main>
+
+<main id="view-quiz" hidden>
+  <div class="qwrap" id="quiz"></div>
+</main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const col=n=>`--lc:var(--l${n});--ls:var(--l${n}s)`;
+const ip2n=s=>{const p=s.trim().split('.');if(p.length!==4||p.some(x=>!/^\d{1,3}$/.test(x)||+x>255))return null;return((+p[0]<<24)|(+p[1]<<16)|(+p[2]<<8)|+p[3])>>>0};
+const n2ip=n=>[n>>>24,(n>>>16)&255,(n>>>8)&255,n&255].join('.');
+const bin32=n=>n.toString(2).padStart(32,'0');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// 3. encapsulation
+function drawEnc(){
+  const tcp=$('encP').value==='tcp',k=+$('sEnc').value;
+  const L=[['Прикладной',7,'символьный поток','GET /index.html HTTP/1.1 …'],[tcp?'Транспортный (TCP)':'Транспортный (UDP)',4,tcp?'сегмент':'датаграмма',tcp?'порт 29384 → 80 · номера, подтверждения':'порт 51000 → 53 · длина, контрольная сумма'],['Сетевой (IP)',3,'пакет','адрес отправителя → адрес получателя'],['Канальный (Ethernet)',2,'кадр','MAC получателя · MAC отправителя']];
+  $('vEnc').textContent=k+' из 4';
+  let html='';
+  for(let i=k-1;i>=0;i--){ // outer first = highest built index
+    const l=L[i];
+    html=`<div class="encl" style="${col(l[1])}"><b>${l[0]} · ${l[2]}</b><span>${l[3]}</span>${html||`<div class="core">данные приложения</div>`}</div>`;
+  }
+  // nesting: outermost is the last built layer
+  let inner='<div class="core">данные приложения</div>';
+  for(let i=0;i<k;i++){const l=L[i];inner=`<div class="encl" style="${col(l[1])}"><b>${l[0]} · ${l[2]}</b><span>${l[3]}</span>${inner}</div>`}
+  $('enc').innerHTML=inner;
+  const t=['Приложение формирует поток символов: данные и команды.',tcp?'TCP режет поток на сегменты, нумерует их, следит за подтверждениями. Устанавливается соединение.':'UDP просто добавляет порты и контрольную сумму заголовка и отправляет. Ни соединения, ни подтверждений.','Сегмент (датаграмма) упаковывается в IP-пакет с адресами отправителя и получателя.','Пакет упаковывается в кадр с MAC-адресами и уходит в линию.'];
+  $('encres').textContent=t[k-1];
+}
+$('encP').onchange=drawEnc;$('sEnc').oninput=drawEnc;$('sEnc').setAttribute('aria-label','Глубина упаковки');drawEnc();
+
+// 5. URL
+function drawUrl(){
+  const v=$('url').value.trim();let u;try{u=new URL(v)}catch(e){u=null}
+  if(!u){$('urlres').innerHTML='<p class="warn" style="margin-top:8px">Не похоже на URL. Нужно начинать с протокола, например https://</p>';return}
+  const rows=[['Протокол (схема)',u.protocol.replace(':','')],['Логин',u.username||'—'],['Пароль',u.password||'—'],['Домен (хост)',u.hostname],['Порт',u.port||'по умолчанию для протокола'],['Путь',u.pathname],['Параметры',u.search||'—'],['Якорь',u.hash||'—']];
+  $('urlres').innerHTML='<dl class="kv">'+rows.map(r=>`<dt>${r[0]}</dt><dd>${esc(r[1])}</dd>`).join('')+'</dl>';
+}
+$('url').oninput=drawUrl;drawUrl();
+
+// 6. steps + sockets
+const ST6=[[7,'Сервер просит у ОС порт 80','веб-сервер читает конфиг'],[4,'Сокет сервера в состоянии LISTEN','ОС закрепила порт'],[4,'Клиент получает случайный порт','больше 1024'],[4,'Клиент формирует TCP-сегмент','порт клиента → порт 80'],[3,'Сегмент упаковывается в IP-пакет','адреса клиента и сервера'],[2,'Пакет упаковывается в кадр и уходит в сеть','MAC-адреса'],[4,'Сервер копирует сокет: ESTABLISHED','уточняет адрес и порт клиента']];
+$('steps6').innerHTML=ST6.map((s,i)=>`<div class="st" style="${col(s[0])}"><b>${i+1}. ${s[1]}</b><small>${s[2]}</small></div>`).join('');
+const SRV='10.0.2.15',CLI='10.0.2.14';let conns=[];
+function drawSock(){
+  const v=$('sockView').dataset.v;$('sockView').textContent='Показать: '+(v==='srv'?'сервер':'клиент');
+  let rows='';
+  if(v==='srv'){rows+=`<tr><td class="mono">LISTEN</td><td class="mono">*:22</td><td class="mono">*:*</td></tr>`;
+    conns.forEach(p=>rows+=`<tr><td class="mono ok">ESTAB</td><td class="mono">${SRV}:22</td><td class="mono">${CLI}:${p}</td></tr>`)}
+  else{if(!conns.length)rows='<tr><td colspan="3" class="muted">Клиент пока ни с чем не соединён.</td></tr>';
+    conns.forEach(p=>rows+=`<tr><td class="mono ok">ESTAB</td><td class="mono">${CLI}:${p}</td><td class="mono">${SRV}:22</td></tr>`)}
+  $('sockTab').innerHTML=rows;
+  $('sockres').innerHTML=v==='srv'?`Строк с портом 22 на сервере: <b>${1+conns.length}</b> (1 слушающая и ${conns.length} установленных). Порт сервера везде 22, различаются порты клиентов.`:`На клиенте картина зеркальная: локальный и удалённый адреса поменялись местами. У каждого соединения свой случайный порт.`;
+  $('sockDel').disabled=!conns.length;
+}
+$('sockAdd').onclick=()=>{let p;do{p=40000+Math.floor(Math.random()*20000)}while(conns.includes(p));conns.push(p);drawSock()};
+$('sockDel').onclick=()=>{conns.pop();drawSock()};
+$('sockView').onclick=()=>{$('sockView').dataset.v=$('sockView').dataset.v==='srv'?'cli':'srv';drawSock()};
+drawSock();
+
+// 7. multicast
+function drawMc(){
+  const n=+$('sMc').value;$('vMc').textContent=n;
+  const row=(name,v,color)=>`<div class="row"><b>${name}</b><div class="track"><i style="width:${v/n*100}%;background:var(${color})"></i></div><span class="num">${v} ${v===1?'копия':'копий'}</span></div>`;
+  $('mcres').innerHTML=row('Unicast: источник',n,'--bad')+row('Multicast: источник',1,'--good');
+  $('mcnote').innerHTML=`При unicast источник формирует и отправляет <b>${n}</b> одинаковых потоков: ${n} раз нагружает процессор, диск, память и сеть. При multicast он шлёт <b>один</b> пакет, а коммутатор или маршрутизатор сам размножает его для членов группы.`;
+}
+$('sMc').oninput=drawMc;$('sMc').setAttribute('aria-label','Зрителей');drawMc();
+
+// 8. IPv4 calc
+function ipType(n){const a=n>>>24,b=(n>>>16)&255;
+  if(n===0)return 'неопределённый адрес';if(n===0xFFFFFFFF)return 'ограниченный broadcast';
+  if(a===0)return '«эта сеть» (нули в поле сети)';if(a===127)return 'loopback (сам с собой)';if(a===10||(a===172&&b>=16&&b<=31)||(a===192&&b===168))return '«серый» (частный, RFC 1918)';
+  if(a===169&&b===254)return 'автоконфигурация (нет DHCP)';if(a>=224&&a<=239)return 'multicast';if(a>=240)return 'зарезервирован (класс E)';return 'обычный (публичный) адрес'}
+function drawIp(){
+  const pf=+$('sPf').value;$('vPf').textContent=pf;const n=ip2n($('ipa').value);
+  if(n===null){$('ipres').innerHTML='<p class="warn" style="margin-top:8px">Введите адрес из четырёх чисел 0–255 через точки.</p>';return}
+  const mask=pf===0?0:(0xFFFFFFFF<<(32-pf))>>>0,net=(n&mask)>>>0,bc=(net|(~mask>>>0))>>>0,h=32-pf;
+  const cls=(n>>>31)===0?'A':(n>>>30)===2?'B':(n>>>29)===6?'C':(n>>>28)===14?'D (multicast)':'E';
+  const total=2**h,usable=h>=2?total-2:(h===1?2:1);
+  const b=bin32(n);const bits=b.slice(0,pf)+'|'+b.slice(pf);
+  const first=h>=2?net+1:net,last=h>=2?bc-1:bc;
+  $('ipres').innerHTML=`<dl class="kv">
+   <dt>Маска</dt><dd>${n2ip(mask)} (/${pf})</dd>
+   <dt>Адрес сети</dt><dd>${n2ip(net)}</dd>
+   <dt>Broadcast</dt><dd>${n2ip(bc)}</dd>
+   <dt>Диапазон хостов</dt><dd>${n2ip(first>>>0)} — ${n2ip(last>>>0)}</dd>
+   <dt>Бит под узлы</dt><dd>${h} (всего адресов ${total.toLocaleString('ru-RU')}, рабочих ${usable.toLocaleString('ru-RU')})</dd>
+   <dt>Класс по первым битам</dt><dd>${cls}</dd>
+   <dt>Тип адреса</dt><dd style="font-family:var(--body)">${ipType(n)}</dd>
+   <dt>Двоично (сеть | узел)</dt><dd>${bits.replace(/(\d{8})(?=\d)/g,'$1.').replace(/\.\|/,'|').replace(/\|\./,'|')}</dd></dl>`;
+}
+$('ipa').oninput=drawIp;$('sPf').oninput=drawIp;$('sPf').setAttribute('aria-label','Префикс');drawIp();
+
+// 10. wildcard
+const WEX=[['Нечётные адреса','192.168.0.1','0.0.0.254','192.168.0.37'],['Вся сеть /24','192.168.0.0','0.0.0.255','192.168.0.200'],['Один точный адрес','10.0.0.5','0.0.0.0','10.0.0.6']];
+$('wEx').innerHTML=WEX.map((w,i)=>`<button class="btn ghost" data-i="${i}">${w[0]}</button>`).join('');
+$('wEx').querySelectorAll('button').forEach(b=>b.onclick=()=>{const w=WEX[+b.dataset.i];$('wP').value=w[1];$('wW').value=w[2];$('wA').value=w[3];drawW()});
+function drawW(){
+  const p=ip2n($('wP').value),w=ip2n($('wW').value),a=ip2n($('wA').value);
+  if(p===null||w===null||a===null){$('wres').innerHTML='<p class="warn" style="margin-top:8px">Во всех трёх полях нужны адреса вида 1.2.3.4.</p>';return}
+  const bp=bin32(p),bw=bin32(w),ba=bin32(a);let rowP='',rowA='',ok=true;
+  for(let o=0;o<4;o++){let rp='',ra='';for(let i=o*8;i<o*8+8;i++){const wild=bw[i]==='1';let c;if(wild)c='w';else if(bp[i]===ba[i])c='m';else{c='x';ok=false}
+    rp+=`<span class="${c==='x'?'m':c}">${bp[i]}</span>`;ra+=`<span class="${c}">${ba[i]}</span>`}
+    rowP+=`<span class="oc">${rp}</span>`;rowA+=`<span class="oc">${ra}</span>`}
+  const cnt=2**bw.split('1').length-1*0; const k=(bw.match(/1/g)||[]).length;
+  $('wres').innerHTML=`<p style="margin-top:8px">Образец:</p><div class="cmp">${rowP}</div><p>Проверяемый адрес (серым — разряды, где совпадать не нужно, красным — несовпадение):</p><div class="cmp">${rowA}</div>
+   <p class="caption" style="margin-top:8px">${ok?'<span class="ok">Совпадает: правило применится к этому адресу.</span>':'<span class="err">Не совпадает: правило этот адрес не заденет.</span>'} Под правило подходит <b>${(2**k).toLocaleString('ru-RU')}</b> адресов.</p>`;
+}
+['wP','wW','wA'].forEach(i=>$(i).oninput=drawW);drawW();
+
+// 11. IPv6
+function v6parse(s){s=s.trim().toLowerCase();if(!/^[0-9a-f:]+$/.test(s)||/:::/.test(s)||(s.match(/::/g)||[]).length>1)return null;
+  let g;if(s.includes('::')){const [l,r]=s.split('::');const L=l?l.split(':'):[],R=r?r.split(':'):[];if(L.length+R.length>7)return null;g=[...L,...Array(8-L.length-R.length).fill('0'),...R]}else g=s.split(':');
+  if(g.length!==8||g.some(x=>!/^[0-9a-f]{1,4}$/.test(x)))return null;return g.map(x=>x.padStart(4,'0'))}
+function v6comp(g){const t=g.map(x=>x.replace(/^0+(?=.)/,''));let best=-1,bl=0;for(let i=0;i<8;){if(g[i]==='0000'){let j=i;while(j<8&&g[j]==='0000')j++;if(j-i>bl){bl=j-i;best=i}i=j}else i++}
+  if(bl<2)return t.join(':');const a=t.slice(0,best).join(':'),b=t.slice(best+bl).join(':');return a+'::'+b}
+const V6EX=[['Документация','2001:0db8:0000:0000:0000:ff00:0042:8329'],['Link-local','fe80:0000:0000:0000:02a4:1bff:fe3c:d5a1'],['Loopback','::1'],['Multicast: все узлы','ff02::1']];
+$('v6Ex').innerHTML=V6EX.map((w,i)=>`<button class="btn ghost" data-i="${i}">${w[0]}</button>`).join('');
+$('v6Ex').querySelectorAll('button').forEach(b=>b.onclick=()=>{$('v6').value=V6EX[+b.dataset.i][1];drawV6()});
+function v6kind(g){const f=parseInt(g[0],16);if(g.every(x=>x==='0000'))return 'неопределённый адрес (::)';if(g.slice(0,7).every(x=>x==='0000')&&g[7]==='0001')return 'loopback (::1)';
+  if((f>>8)===0xff)return 'multicast (ff…)';if((f&0xffc0)===0xfe80)return 'link-local (fe80::/10): есть у каждого IPv6-узла';if((f&0xfe00)===0xfc00)return 'unique local (fc00::/7): «серый» адрес';if((f>>13)===1)return 'global unicast (2000::/3): «белый» адрес интернета';return 'другой / зарезервированный диапазон'}
+function drawV6(){const g=v6parse($('v6').value);
+  if(!g){$('v6res').innerHTML='<p class="warn" style="margin-top:8px">Некорректный адрес: 8 групп по 1–4 hex-цифры, «::» не более одного раза.</p>';return}
+  $('v6res').innerHTML=`<dl class="kv"><dt>Полная запись</dt><dd>${g.join(':')}</dd><dt>Сокращённая</dt><dd>${v6comp(g)}</dd><dt>Тип</dt><dd style="font-family:var(--body)">${v6kind(g)}</dd></dl>`}
+$('v6').oninput=drawV6;drawV6();
+
+// tabs
+function view(v){$('view-notes').hidden=v!=='notes';$('view-quiz').hidden=v!=='quiz';document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.view===v));window.scrollTo({top:0})}
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>view(t.dataset.view));$('go-quiz').onclick=()=>view('quiz');
+
+// quiz
+const Q=[
+ ["Почему про TCP/IP говорят «три с половиной уровня»?",["Один уровень удалён","Физический уровень стандартами TCP/IP не регламентируется, только стык с канальным","Верхний уровень необязателен","Канальный уровень делится пополам"],1,"TCP/IP не учит, как строить Ethernet. Он описывает инкапсуляцию IP поверх канального уровня, отображение адресов и multicast."],
+ ["Что означает «нестрогий порядок инкапсуляции» в TCP/IP?",["Уровни можно менять местами при настройке","Можно упаковывать IP в IP или кадр в IP, и так делают туннели","Данные не упаковываются","Работает только один протокол на уровне"],1,"В OSI порядок жёсткий, в TCP/IP нет. Это даёт хаос, но и возможность строить туннели."],
+ ["Как называется сообщение TCP и сообщение UDP?",["Кадр и пакет","Сегмент и датаграмма","Пакет и сегмент","Поток и кадр"],1,"Данные приложения → сегмент TCP / датаграмма UDP → IP-пакет → кадр."],
+ ["Что гарантирует TCP?",["Только скорость","Доставку, порядок сообщений и целостность данных","Шифрование","Ничего не гарантирует"],1,"Для этого TCP устанавливает и закрывает соединение и следит за подтверждениями."],
+ ["Что делает UDP при отправке сообщения?",["Устанавливает соединение","Отправляет на нужный порт без соединения и подтверждений","Проверяет доставку","Шифрует данные"],1,"Только проверка целостности заголовка. Всё остальное на стороне приложения."],
+ ["Что такое порт?",["Разъём на коммутаторе","Номер очереди, которую занимает процесс на хосте, адрес приложения на хосте","Адрес сети","Тип кабеля"],1,"Всё, что процесс пишет в сеть, идёт через его порт, всё, что приходит, ОС кладёт в очередь этого порта."],
+ ["Что такое сокет в сетевом смысле?",["Розетка","Пара «IP-адрес : порт»","MAC-адрес","Адрес DNS"],1,"Это универсальный адрес приложения в IP-сети."],
+ ["Какой порт получает серверная программа и как его получает клиент?",["Оба случайный","Сервер просит известный порт (например 80), клиент получает от ОС случайный порт больше 1024","Оба просят порт 80","Сервер случайный, клиент 80"],1,"Сервер должен быть доступен по известному порту, клиенту всё равно, откуда писать."],
+ ["Почему у клиента порт должен быть случайным, а не фиксированным?",["Это требование безопасности","Иначе на хосте можно было бы запустить только один экземпляр клиента протокола","Так проще для сервера","Фиксированные порты закончились"],1,"С разными номерами портов клиент может открыть хоть тысячу соединений."],
+ ["В каком состоянии сокет службы, которая ждёт подключений?",["ESTABLISHED","LISTEN","TIME-WAIT","CLOSED"],1,"Адрес пира (клиента) в этом состоянии не определён."],
+ ["Клиент подключился к SSH на сервере (порт 22). Что произошло с сокетами сервера?",["Слушающий сокет исчез","Сервер сделал копию слушающего сокета с уточнёнными адресами, а слушающий остался","Порт закрылся для всех остальных","Сервер сменил порт"],1,"В итоге есть строка LISTEN и строка ESTABLISHED для соединения с клиентом."],
+ ["Чем anycast отличается от multicast?",["Ничем","При multicast пакет получает вся группа, при anycast только один (ближайший) из группы","Anycast только в IPv4","Multicast одному хосту"],1,"Пример anycast по словам лектора: 8.8.8.8, где ответит ближайший сервер Google."],
+ ["Зачем нужен multicast при трансляции видео на 50 зрителей?",["Он шифрует видео","Источник шлёт один поток, а сетевое оборудование размножает его, поэтому нагрузка на источник в разы ниже","Видео становится лучше","Он устраняет задержку полностью"],1,"При unicast источник формирует 50 одинаковых потоков."],
+ ["Какой класс адресов используется для multicast в IPv4?",["A","B","C","D"],3,"Класс D: адреса, начинающиеся с двоичных 1110."],
+ ["Что означает префикс /26?",["26 адресов в сети","26 единиц в маске: 26 бит под сеть и 6 под узлы","26 подсетей","Порт 26"],1,"Остальные 32−26=6 бит отводятся под адреса узлов."],
+ ["Сколько рабочих адресов узлов в сети /30?",["4","3","2","1"],2,"Из 4 адресов один — адрес сети и один — broadcast."],
+ ["Что нельзя назначать хосту?",["Любой адрес из диапазона","Адрес сети (все биты узла 0) и broadcast (все биты узла 1)","Адрес с чётным последним байтом","Адрес 192.168.x.x"],1,"Это служебные адреса для маршрутизации и широковещания."],
+ ["Зачем хосту знать маску?",["Незачем, это забота администратора","Чтобы понять, назначение в своей локалке или за шлюзом, и проверить, что шлюз тоже в ней","Для шифрования","Для выбора скорости"],1,"Без маски нельзя решить, идти ли на хост напрямую или через шлюз по умолчанию."],
+ ["Что за адрес 169.254.x.x у интерфейса?",["Белый адрес провайдера","Адрес автоконфигурации: DHCP-сервера нет, и узел выбрал адрес сам","Loopback","Broadcast"],1,"На Windows это включено по умолчанию."],
+ ["Какой из диапазонов «серый» (частный)?",["8.8.0.0/16","10.0.0.0/8","169.254.0.0/16","224.0.0.0/4"],1,"RFC 1918: 10/8, 172.16/12 и 192.168/16."],
+ ["Что означает единица в wildcard-маске?",["В этом разряде адрес должен совпасть","В этом разряде значение любое","Разряд принадлежит сети","Разряд игнорируется, если ноль"],1,"Ноль требует совпадения с образцом, единица разрешает любое значение."],
+ ["Правило с образцом 192.168.0.1 и wildcard 0.0.0.254 подходит для:",["Всех адресов сети","Нечётных адресов этой сети /24","Только 192.168.0.1","Чётных адресов"],1,"254 = 11111110: все биты последнего байта, кроме младшего, любые, а младший должен быть 1."],
+ ["Как правильно сократить 2001:0db8:0000:0000:0000:ff00:0042:8329?",["2001:db8::ff00:42:8329","2001:db8::ff::8329","2001:0db8::ff00:0042:8329:0","2001:db8:ff00:42:8329"],0,"Убираем ведущие нули и заменяем одну самую длинную цепочку нулевых групп на «::». Использовать «::» дважды нельзя."],
+ ["Почему в IPv6 нет broadcast?",["Забыли","Намеренно убран: в больших плоских сетях он забивает канал и заставляет все узлы разбирать лишнее. Вместо него multicast","Он заменён anycast","Он есть, просто скрыт"],1,"Кадр на ff02::1 получат только IPv6-узлы."],
+ ["С какой записи начинается link-local адрес IPv6 и у кого он есть?",["2001:, только у провайдера","fe80: у любого IPv6-узла, он создаётся автоматически","fd, только у серверов","ff02, у роутеров"],1,"Нужен для работы самого протокола. В конце часто пишут номер интерфейса, например %19."]
+].map(([q,o,a,e])=>{const c=o[a];const s=o.map((t,i)=>[t,Math.random()]).sort((x,y)=>x[1]-y[1]).map(x=>x[0]);return {q,o:s,a:s.indexOf(c),e}});
+const ORD=ST6.map(s=>s[1]);
+let qi=0,score=0,wrong=[],answered=false;const qroot=$('quiz'),total=Q.length+1;
+const head=()=>`<div class="progress"><span>Задание ${Math.min(qi+1,total)} из ${total}</span><div class="bar"><i style="width:${qi/total*100}%"></i></div><span>Верно: ${score}</span></div>`;
+function renderQ(){answered=false;
+  if(qi<Q.length){const x=Q[qi];qroot.innerHTML=head()+`<div class="qcard"><h3>${x.q}</h3><div class="opts">${x.o.map((o,i)=>`<button class="opt" data-i="${i}">${o}</button>`).join('')}</div><div id="ex"></div></div>`;
+    qroot.querySelectorAll('.opt').forEach(b=>b.onclick=()=>pick(+b.dataset.i))}
+  else if(qi===Q.length)renderOrder();else renderResult()}
+function pick(i){if(answered)return;answered=true;const x=Q[qi],ok=i===x.a;if(ok)score++;else wrong.push(x);
+  qroot.querySelectorAll('.opt').forEach((b,j)=>{b.disabled=true;if(j===x.a)b.classList.add('right');else if(j===i)b.classList.add('wrong')});
+  $('ex').innerHTML=`<div class="explain"><b>${ok?'Верно.':'Неверно.'}</b> ${x.e}</div><div class="controls" style="margin-top:10px"><button class="btn" id="nx">Дальше</button></div>`;
+  $('nx').onclick=()=>{qi++;renderQ()};$('nx').focus()}
+function renderOrder(){let chosen=[];const items=ORD.map((n,i)=>({n,i})).sort(()=>Math.random()-.5);
+  function draw(done){
+    const slots=ORD.map((n,k)=>{const c=chosen[k];let cl='';if(done)cl=c&&c.i===k?'ok':'no';
+      return `<div class="slot ${cl}"><span class="n">${k+1}</span><span>${c?c.n:'<span class="muted">…</span>'}${done&&cl==='no'?` <span class="muted">→ ${n}</span>`:''}</span></div>`}).join('');
+    qroot.innerHTML=head()+`<div class="qcard"><h3>Финальное задание: расставьте этапы установления соединения по порядку</h3><p class="muted">Нажимайте на этапы по очереди, как они идут от запуска сервера до установленного соединения.</p>
+     <div class="pool">${items.filter(it=>!chosen.includes(it)).map(it=>`<button class="pick" data-i="${it.i}">${it.n}</button>`).join('')}</div>
+     <div class="order">${slots}</div><div class="controls">${done?'<button class="btn" id="fin">Посмотреть результат</button>':'<button class="btn ghost" id="undo">Отменить последний</button>'}</div></div>`;
+    if(!done){qroot.querySelectorAll('.pick').forEach(b=>b.onclick=()=>{chosen.push(items.find(it=>it.i===+b.dataset.i));
+      if(chosen.length===ORD.length){const ok=chosen.every((c,k)=>c.i===k);if(ok)score++;else wrong.push({q:'Этапы установления соединения',e:ORD.join(' → ')});draw(true)}else draw(false)});
+      const u=$('undo');u.disabled=!chosen.length;u.onclick=()=>{chosen.pop();draw(false)}}
+    else $('fin').onclick=()=>{qi++;renderQ()}}
+  draw(false)}
+function renderResult(){const pct=Math.round(score/total*100);
+  const msg=pct>=90?'Отлично, можно переходить к следующей лекции.':pct>=70?'Хорошо. Посмотрите разбор ошибок ниже.':'Стоит ещё раз пройти конспект и попробовать снова.';
+  qroot.innerHTML=`<div class="qcard result"><div class="eyebrow">Результат</div><div class="score">${score} / ${total}</div><p>${msg}</p>${wrong.length?`<div class="review"><b>Над чем поработать:</b>${wrong.map(w=>`<div><b>${w.q}</b><br>${w.e}</div>`).join('')}</div>`:''}
+   <div class="controls"><button class="btn" id="again">Пройти заново</button><button class="btn ghost" id="back">К конспекту</button></div></div>`;
+  $('again').onclick=()=>{qi=0;score=0;wrong=[];renderQ()};$('back').onclick=()=>view('notes')}
+renderQ();
+
+</script>
+</body>
+</html>
