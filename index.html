@@ -44,7 +44,7 @@ footer{margin-top:40px;font-size:14px;color:var(--muted)}
 <footer>Команда: Глеб Степанов, Булат Очиров, Саша Аюров, Янина Клементьева.</footer>
 </div>
 <script>
-const ready = {1:{t:"Задачи сетевой коммуникации. Модель OSI",s:"Конспект, схемы и тест из 19 заданий",href:"lecture-1.html"}};
+const ready = {1:{t:"Задачи сетевой коммуникации. Модель OSI",s:"Конспект, схемы и тест из 19 заданий",href:"lecture-1.html"},2:{t:"Физический уровень сетевого стека",s:"Конспект, 5 интерактивных схем и тест из 23 заданий",href:"lecture-2.html"}};
 document.getElementById('list').innerHTML = Array.from({length:12},(_,i)=>{
   const n=i+1, r=ready[n];
   return r ? `<a class="item" href="${r.href}"><span class="num">${String(n).padStart(2,'0')}</span><span><span class="title">Лекция ${n}. ${r.t}</span><br><span class="sub">${r.s}</span></span><span class="tag">Готово</span></a>`
