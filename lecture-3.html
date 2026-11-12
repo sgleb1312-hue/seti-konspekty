@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Ethernet: лекция 3</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column; the 7-layer stack and the 3-network route are the two signature visuals */
+:root{
+  --bg:#f5f7fa; --surface:#ffffff; --fg:#17202e; --muted:#5a6678; --line:#dbe1ea; --accent:#2f5bd3; --accent-soft:#e6ecfb;
+  --good:#1d8a52; --good-soft:#e2f4ea; --bad:#c23b32; --bad-soft:#fbe7e5; --hl:#f6d34a; --hl-soft:#fff6cf;
+  --l7:#7a4cc2; --l6:#a1459a; --l5:#c4466a; --l4:#d06a2a; --l3:#b48a12; --l2:#2f8f5b; --l1:#2f6fb3;
+  --l7s:#f0eafa; --l6s:#f7e9f5; --l5s:#fbe8ee; --l4s:#fcede3; --l3s:#f8f1dc; --l2s:#e3f3ea; --l1s:#e4eef9;
+  --display:"Unbounded", "Golos Text", system-ui, sans-serif;
+  --body:"Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10151d; --surface:#18202b; --fg:#e7ecf3; --muted:#9aa6b8; --line:#2a3443; --accent:#7f9df0; --accent-soft:#1f2b45;
+  --good:#5cc68b; --good-soft:#163325; --bad:#ef7d74; --bad-soft:#3a1c1a; --hl:#e3c058; --hl-soft:#3a3218;
+  --l7:#b18cf0; --l6:#e08ad6; --l5:#f08aa8; --l4:#f3a06a; --l3:#e3c058; --l2:#6fcf98; --l1:#73aef0;
+  --l7s:#271f38; --l6s:#2f1d2d; --l5s:#33202a; --l4s:#33261d; --l3s:#2f2a18; --l2s:#18301f; --l1s:#18273a;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10151d; --surface:#18202b; --fg:#e7ecf3; --muted:#9aa6b8; --line:#2a3443; --accent:#7f9df0; --accent-soft:#1f2b45;
+  --good:#5cc68b; --good-soft:#163325; --bad:#ef7d74; --bad-soft:#3a1c1a; --hl:#e3c058; --hl-soft:#3a3218;
+  --l7:#b18cf0; --l6:#e08ad6; --l5:#f08aa8; --l4:#f3a06a; --l3:#e3c058; --l2:#6fcf98; --l1:#73aef0;
+  --l7s:#271f38; --l6s:#2f1d2d; --l5s:#33202a; --l4s:#33261d; --l3s:#2f2a18; --l2s:#18301f; --l1s:#18273a;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+.wrap{max-width:860px;margin:0 auto}
+h1,h2,h3{text-wrap:balance;line-height:1.25}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,5vw,38px);margin:0}
+h2{font-family:var(--display);font-weight:500;font-size:clamp(20px,3.4vw,25px);margin:0}
+h3{font-size:17px;margin:0}
+p{margin:0;max-width:68ch}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono);font-size:.92em}
+a{color:var(--accent)}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+header.top{padding-block:40px 24px;display:grid;gap:12px}
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--muted)}
+
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;flex-wrap:wrap;gap:6px;padding-block:10px;border-bottom:1px solid var(--line);margin-bottom:28px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.tab{font:600 15px var(--body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 16px;border-radius:999px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+section.block{display:grid;gap:14px;margin-bottom:48px}
+.kicker{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.time{font-family:var(--mono);font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:4px;align-content:start;min-width:0}
+.card b{font-size:15px}
+.card span{font-size:14px;color:var(--muted)}
+.group-label{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-top:4px}
+
+.quote{border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;padding:10px 14px;font-size:15px}
+
+/* history timeline */
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.flow .card{border-top:4px solid var(--accent)}
+
+/* OSI stack */
+.osi{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px;align-items:start}
+@media (max-width:660px){.osi{grid-template-columns:1fr}}
+.stack{display:grid;gap:5px}
+.layer{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:10px;width:100%;text-align:left;
+  font:500 15px var(--body);color:var(--fg);background:var(--ls);border:1px solid transparent;border-left:6px solid var(--lc);
+  border-radius:8px;padding:9px 12px;cursor:pointer}
+.layer .n{font-family:var(--mono);font-weight:600;color:var(--lc)}
+.layer .pdu{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.layer[aria-pressed="true"]{border-color:var(--lc);box-shadow:0 0 0 1px var(--lc) inset}
+.detail{background:var(--surface);border:1px solid var(--line);border-top:6px solid var(--lc);border-radius:10px;padding:16px;display:grid;gap:10px;min-width:0}
+.detail dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0;font-size:15px}
+.detail dt{color:var(--muted);font-size:13px;padding-top:2px}
+.detail dd{margin:0}
+.chip{display:inline-block;font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:999px;background:var(--ls);color:var(--fg);border:1px solid var(--lc);margin:0 4px 4px 0}
+.lect{font-size:14px;background:var(--accent-soft);border-radius:8px;padding:8px 10px}
+
+.tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+tr:last-child td{border-bottom:0}
+
+/* encapsulation */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:14px;min-width:0}
+.packet{display:flex;flex-wrap:wrap;gap:0;font-family:var(--mono);font-size:13px;min-height:46px}
+.seg{padding:12px 10px;border:1px solid var(--lc);background:var(--ls);color:var(--fg);display:flex;align-items:center}
+.seg+.seg{border-left:0}
+.seg:first-child{border-radius:8px 0 0 8px}.seg:last-child{border-radius:0 8px 8px 0}.seg:only-child{border-radius:8px}
+.seg.new{animation:pop .35s ease-out}
+@keyframes pop{from{transform:translateY(-6px);opacity:.3}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.seg.new{animation:none}}
+.caption{font-size:15px;min-height:3.2em}
+.controls{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:600 15px var(--body);border:1px solid var(--fg);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:8px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--fg);border-color:var(--line)}
+.btn:disabled{opacity:.4;cursor:default}
+
+/* segmentation */
+.segm{display:grid;grid-template-columns:auto 1fr;gap:10px 14px;align-items:center}
+.box{height:30px;border-radius:6px;background:var(--l4s);border:1px solid var(--l4)}
+.pieces{display:flex;gap:4px;flex-wrap:wrap}
+.pieces i{display:block;width:34px;height:30px;border-radius:5px;background:var(--l4s);border:1px solid var(--l4)}
+.pieces i.bad{background:var(--bad-soft);border-color:var(--bad)}
+
+/* network diagram */
+.netwrap{overflow-x:auto}
+.netwrap svg{display:block;width:100%;min-width:620px;height:auto}
+.net-ellipse{fill:var(--surface);stroke:var(--line);stroke-width:2}
+.net-ellipse.on{stroke:var(--accent);stroke-width:3}
+.net-label{fill:var(--muted);font:600 13px var(--body)}
+.node{fill:var(--l2s);stroke:var(--l2);stroke-width:2}
+.node.on{fill:var(--hl-soft);stroke:var(--hl);stroke-width:3}
+.router{fill:var(--l3s);stroke:var(--l3);stroke-width:2}
+.router.on{fill:var(--hl-soft);stroke:var(--hl);stroke-width:3}
+.t{fill:var(--fg);font:600 12px var(--mono)}
+.ts{fill:var(--muted);font:500 11px var(--mono)}
+.link{stroke:var(--line);stroke-width:2}
+.dot{fill:var(--accent)}
+@media (prefers-reduced-motion:no-preference){.dot{transition:cx .5s ease,cy .5s ease}}
+.hdrs{display:grid;gap:8px}
+.hdr{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center;font-size:14px}
+@media (max-width:520px){.hdr{grid-template-columns:1fr}}
+.hdr .lbl{font-weight:600}
+.fields{display:flex;flex-wrap:wrap;gap:6px}
+.f{font-family:var(--mono);font-size:13px;border:1px solid var(--lc);background:var(--ls);border-radius:6px;padding:4px 8px}
+.f.chg{background:var(--hl-soft);border-color:var(--hl);box-shadow:0 0 0 1px var(--hl) inset}
+.rt{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.rt table{font-family:var(--mono);font-size:13px}
+.rt tr.on td{background:var(--hl-soft)}
+.rt h3{font-size:14px;padding:8px 10px 0}
+
+/* wireshark mock */
+.ws{font-family:var(--mono);font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+.ws div{padding:6px 12px;border-bottom:1px solid var(--line);white-space:nowrap;border-left:5px solid var(--lc)}
+.ws div:last-child{border-bottom:0}
+
+.recap{display:grid;gap:8px;padding:0;margin:0;list-style:none}
+.recap li{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+
+/* quiz */
+.qwrap{display:grid;gap:16px}
+.progress{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--muted)}
+.bar{flex:1;height:8px;background:var(--line);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:12px}
+.qcard h3{font-size:18px}
+.opts{display:grid;gap:8px}
+.opt{font:500 15px var(--body);text-align:left;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:11px 14px;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt.right{background:var(--good-soft);border-color:var(--good)}
+.opt.wrong{background:var(--bad-soft);border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.explain{font-size:15px;border-radius:8px;padding:10px 12px;background:var(--accent-soft)}
+.order{display:grid;gap:6px}
+.pool{display:flex;flex-wrap:wrap;gap:6px}
+.pick{font:500 14px var(--body);border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:999px;padding:7px 12px;cursor:pointer}
+.slot{display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:center;font-size:15px;min-height:38px;border:1px dashed var(--line);border-radius:8px;padding:6px 10px}
+.slot .n{font-family:var(--mono);font-weight:600;color:var(--muted)}
+.slot.ok{border-style:solid;border-color:var(--good);background:var(--good-soft)}
+.slot.no{border-style:solid;border-color:var(--bad);background:var(--bad-soft)}
+.result{text-align:center;display:grid;gap:10px;justify-items:center}
+.score{font-family:var(--display);font-size:46px;font-weight:700}
+.review{display:grid;gap:6px;text-align:left;width:100%}
+.review div{font-size:14px;padding:8px 10px;border-radius:8px;background:var(--bad-soft)}
+</style>
+<style>
+.eyebrow a{color:var(--muted);text-decoration:none}.eyebrow a:hover{color:var(--accent)}
+.sel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.sel-grid label{display:grid;gap:4px;font-size:13px;color:var(--muted);font-weight:600}
+select,.inp{font:500 15px var(--body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+.inp.mono{font-family:var(--mono);letter-spacing:.08em}
+.lbl{font-size:13px;color:var(--muted);font-weight:600}
+.steps{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch}
+.steps .st{flex:1 1 130px;background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--lc);border-radius:8px;padding:8px 10px;font-size:14px;display:grid;gap:2px;align-content:start}
+.steps .st small{color:var(--muted);font-size:12px}
+.steps .st.cond{border-style:dashed;border-top-style:solid}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.sliders label{display:grid;gap:4px;font-size:14px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+svg{width:100%;height:auto;display:block}
+.simlog{display:grid;gap:4px;font-family:var(--mono);font-size:13px;max-height:220px;overflow:auto}
+.simlog div{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+.simlog .win{border-color:var(--good);background:var(--good-soft)}
+.simlog .col{border-color:var(--bad);background:var(--bad-soft)}
+.ok{color:var(--good);font-weight:600}.warn{color:var(--l4);font-weight:600}.err{color:var(--bad);font-weight:600}
+.bitbox{display:inline-grid;gap:2px;text-align:center;font-family:var(--mono);font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;margin:2px}
+.bitbox b{color:var(--accent)}
+td.hl{background:var(--hl-soft)}
+.dmb{fill:none;stroke-width:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow"><a href="index.html">← Все лекции</a> · Компьютерные сети · Лекция 3</div>
+  <h1>Локальные сети на примере Ethernet</h1>
+  <p class="muted">Конспект по расшифровке лекции А. Береснева (ИТМО), пересказанный простыми словами. У разделов стоит время в видео. В конспекте четыре интерактивные схемы, во вкладке «Тест» 24 задания.</p>
+  <div class="note"><a href="https://www.youtube.com/watch?v=WVkhM2YHSxI" target="_blank" rel="noopener">Открыть лекцию на YouTube</a> · 1 ч 4 мин</div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-view="notes">Конспект</button>
+  <button class="tab" role="tab" aria-selected="false" data-view="quiz">Тест</button>
+</nav>
+
+<main id="view-notes">
+
+  <section class="block">
+    <div class="kicker"><h2>1. Что мы ждём от канального уровня</h2><span class="time">4:02</span></div>
+    <p>Канальный уровень связывает устройства <b>внутри одной локальной сети</b>. В реальности это связка программы и железа: сетевая карта вместе с драйвером. Лектор перечисляет пять задач.</p>
+    <div class="grid">
+      <div class="card"><b>Делить канал</b><span>Как несколько узлов по очереди пользуются одной линией. В Ethernet для этого статистический механизм.</span></div>
+      <div class="card"><b>Адресовать</b><span>Каждое устройство в сети нужно отличать от других: для этого есть MAC-адреса.</span></div>
+      <div class="card"><b>Задавать топологию</b><span>Физическую (как проложены провода) и логическую (как ходят данные). Это разные вещи, логическую можно строить поверх любой физической.</span></div>
+      <div class="card"><b>Ловить ошибки</b><span>Обнаруживать и исправлять искажения кадров. Выше по стеку этого почти не делают.</span></div>
+      <div class="card"><b>Согласовывать скорость</b><span>Устройства конечной мощности: быстрый отправитель может завалить медленного получателя.</span></div>
+    </div>
+    <div class="quote">Когда говорят «стандарт сети», физический и канальный уровни часто смешивают. Стандарт Ethernet описывает и протокол, и допустимые кабели, длины линий и топологии.</div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>2. Как поделить канал</h2><span class="time">7:50</span></div>
+    <p>Есть линия связи с какой-то полосой пропускания. Как сделать так, чтобы по ней говорили сразу несколько пар устройств? Подходов два, и новых с тех пор не придумали.</p>
+    <div class="panel">
+      <h3>Частотное и временное разделение</h3>
+      <div class="controls" id="dmBtns">
+        <button class="btn" data-m="fdm">Частотное (FDM)</button>
+        <button class="btn ghost" data-m="tdm">Временное (TDM)</button>
+      </div>
+      <svg id="dm" viewBox="0 0 640 210" role="img" aria-label="Схема разделения канала"></svg>
+      <div class="caption" id="dmres"></div>
+    </div>
+    <div class="grid">
+      <div class="card"><b>FDM: плюсы</b><span>Скорость каждой пары гарантирована, выделенную полосу никто не займёт.</span></div>
+      <div class="card"><b>FDM: минусы</b><span>Вся полоса используется не полностью, а сигнал приходится делать сложным.</span></div>
+      <div class="card"><b>TDM: где применяется</b><span>В Ethernet и большинстве проводных сетей: узлы говорят по очереди на всей полосе, но свободно и без главного.</span></div>
+    </div>
+    <p class="muted">Старое возвращается на новом уровне. Wi-Fi комбинирует оба подхода: разносит клиентов по частотным каналам, а внутри канала делит время. В оптических магистралях по одному волокну идут сигналы на разных частотах (и с разной поляризацией), а внутри каждого опять делят время. Так скорость растёт, а новые линии не прокладывают.</p>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>3. Коммутация каналов и коммутация пакетов</h2><span class="time">14:50</span></div>
+    <div class="grid">
+      <div class="card"><b>Коммутация каналов</b><span>Перед сеансом прокладывают маршрут и фиксируют его до конца (так работали ATM, Frame Relay). Эффективно, но при перегрузке или сбое порта маршрут не перестроить.</span></div>
+      <div class="card"><b>Коммутация пакетов</b><span>Каждое промежуточное устройство анализирует заголовок каждого пакета и решает, куда его отправить. Кажется расточительным, но можно балансировать нагрузку и менять путь прямо во время сеанса. Так работает IP.</span></div>
+    </div>
+    <div class="quote">Идеи «из прошлого» иногда возвращаются. Прежде чем изобретать велосипед, посмотрите, что делали до вас.</div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>4. Ethernet: кто и откуда</h2><span class="time">19:24</span></div>
+    <p>Ethernet придумал Роберт Меткалф. По легенде, прототип появился из его курсовой работы в MIT, а потом он работал в Xerox. Стандартом занимается институт <b>IEEE</b>, а сеть описывает книга <span class="mono">802</span>: раздел <span class="mono">802.3</span> — это проводной Ethernet, <span class="mono">802.11</span> — Wi-Fi.</p>
+    <p>Раньше конкурентов было много: FDDI, Token Ring (кольцо и эстафетная палочка-маркер), AppleTalk. Сейчас остался один Ethernet. Все его версии объединяет <b>алгоритм доступа к среде</b>, он называется <b class="mono">CSMA/CD</b>.</p>
+    <div class="quote"><b>Почему он победил.</b> Маркерные сети были сложными и дорогими. Ethernet отказался от главного устройства: у всех узлов равные права, любой передаёт, когда линия свободна. Оборудование получилось простым.</div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>5. CSMA/CD: как узлы делят линию</h2><span class="time">22:36</span></div>
+    <p><b>CSMA/CD</b> — множественный доступ с прослушиванием несущей и обнаружением коллизий. Идея: слушаем канал, говорим, если тихо, а если заговорили одновременно с соседом — договариваемся заново.</p>
+    <h3>Приём кадра</h3>
+    <div class="flow">
+      <div class="card"><b>1. Слушаем</b><span>Узел следит за линией. Появился сигнал — начинаем принимать.</span></div>
+      <div class="card"><b>2. До конца кадра</b><span>Принимаем, пока не увидим признак конца кадра (трейлер).</span></div>
+      <div class="card"><b>3. Смотрим адрес</b><span>Адрес назначения мой или широковещательный? Тогда кадр в обработку.</span></div>
+      <div class="card"><b>4. Чужой кадр</b><span>Адрес не совпал — буфер очищается, возвращаемся к прослушиванию.</span></div>
+    </div>
+    <h3>Передача кадра</h3>
+    <div class="steps" id="steps3"></div>
+    <div class="grid">
+      <div class="card"><b>Межкадровый интервал (IFG)</b><span>Фиксированная пауза между кадрами, равная времени передачи <b>96 бит</b>. Она нужна, чтобы чужой узел успел вклиниться и не остался без линии. Чем быстрее сеть, тем она короче.</span></div>
+      <div class="card"><b>Коллизия</b><span>Сигналы двух узлов смешались, мощность на линии резко возросла. Узел это замечает прямо во время передачи.</span></div>
+      <div class="card"><b>Jam-сигнал</b><span>Узел обрывает передачу и шлёт 32 бита мусора. Все, кто успел принять часть кадра, понимают: это ошибка, и очищают буферы.</span></div>
+    </div>
+    <h3>Случайная пауза: backoff</h3>
+    <p>Если оба узла после коллизии подождут одинаково, они столкнутся снова. Поэтому пауза случайная: после <i>n</i>-й подряд коллизии узел выбирает число <i>k</i> от 0 до 2<sup><i>n</i></sup>−1 и ждёт <i>k</i> × 512 бит (512 бит — это время передачи кадра минимального размера). После 16 неудач узел сдаётся и сообщает драйверу, что сеть недоступна. Лектор сравнивает это с обедом: если двое заговорили одновременно, оба замолкают, а потом начинают в разное время.</p>
+    <div class="panel">
+      <h3>Пауза между кадрами и backoff в цифрах</h3>
+      <div class="sliders">
+        <label><span class="lbl">Скорость сети: <b id="vSp"></b></span><input type="range" id="sSp" min="1" max="4" step="1" value="2"></label>
+        <label><span class="lbl">Номер коллизии подряд: <b id="vN"></b></span><input type="range" id="sN" min="1" max="16" step="1" value="1"></label>
+      </div>
+      <div class="caption" id="bres"></div>
+      <div class="controls"><button class="btn" id="sim">Два узла столкнулись: разыграть</button><button class="btn ghost" id="simClear">Очистить</button></div>
+      <div class="simlog" id="simlog" aria-live="polite"></div>
+    </div>
+    <h3>Минусы</h3>
+    <p>При ровной нагрузке всё хорошо. Но если все узлы внезапно начинают передавать, коллизий становится много, и полезная доля канала падает: узлы в основном ждут. Поэтому на больших скоростях стали делить сеть на сегменты коммутаторами.</p>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>6. Домен коллизий и широковещательный домен</h2><span class="time">39:35</span></div>
+    <div class="grid">
+      <div class="card"><b>Домен коллизий</b><span>Часть сети, где узлы могут помешать друг другу, смешав сигналы. Это понятие физического уровня. В современной сети это отдельный кабель от коммутатора до компьютера.</span></div>
+      <div class="card"><b>Широковещательный домен</b><span>Область, куда доходит широковещательный кадр. Это понятие канального уровня. Один коммутатор с тремя компьютерами: один широковещательный домен и три домена коллизий.</span></div>
+    </div>
+    <div class="note">Эти термины часто путают. Запомните: коллизии про сигналы на проводе, а широковещание про то, кому доставят кадр «всем».</div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>7. MAC-адреса и форматы кадров</h2><span class="time">41:44</span></div>
+    <p>MAC-адрес — это 6 байт. Он делится пополам: первые три байта (<b>OUI</b>) выдаёт производителю специальная организация, а последние три производитель назначает сам, чтобы каждая карта была уникальной. Совпадение адресов в одной сети — большая неприятность: узлы перестают различаться.</p>
+    <p>В первом байте последние два бита — флаги:</p>
+    <div class="grid">
+      <div class="card"><b>I/G: одному или группе</b><span>0 — адрес одного устройства (unicast). 1 — адрес группы (multicast). Адрес <span class="mono">FF:FF:FF:FF:FF:FF</span> — широковещательный, кадр получат все.</span></div>
+      <div class="card"><b>U/L: от завода или назначен вручную</b><span>0 — заводской адрес. 1 — адрес задан руками. Так делают, например, чтобы скрыть производителя оборудования от того, кто смотрит трафик.</span></div>
+    </div>
+    <div class="note">Подмена и перехват чужого MAC — одна из атак на коммутаторы. К ней мы ещё вернёмся.</div>
+    <div class="panel">
+      <h3>Разбор MAC-адреса</h3>
+      <div class="sel-grid">
+        <label>Введите адрес<input class="inp mono" id="mac" value="00:1A:2B:3C:4D:5E" maxlength="17" aria-label="MAC-адрес"></label>
+      </div>
+      <div class="controls" id="macEx"></div>
+      <div class="caption" id="macres"></div>
+    </div>
+    <h3>Четыре формата кадра</h3>
+    <p>Форматов кадра Ethernet четыре: Ethernet II, 802.3 «сырой», 802.3 с LLC и 802.3 с SNAP. Сегодня везде работает IP, а инкапсулировать IP удобно двум из них. Практически используется <b>Ethernet II</b>: его заголовок самый простой. SNAP — попытка приспособить Ethernet к крупным сетям с качеством обслуживания, заголовок там избыточный.</p>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>8. Разновидности Ethernet</h2><span class="time">47:05</span></div>
+    <p>Версии отличаются <b>скоростью</b> (10 Мбит/с, 100 Мбит/с, 1, 10, 40, 100 Гбит/с) и <b>средой передачи</b>. Название читается слева направо: скорость, слово BASE, потом тип среды (T — витая пара, LX и FX — оптика). У всех них общий CSMA/CD как основа и общий формат MAC.</p>
+    <div class="tscroll"><table>
+      <thead><tr><th>Среда</th><th>Типичная дальность</th><th>Заметки</th></tr></thead>
+      <tbody>
+        <tr><td>Коаксиал (10BASE2, 10BASE5)</td><td class="mono">очень давно</td><td>Общая шина, на концах заглушки-терминаторы. Обрыв в одном месте ломает всю сеть. Сейчас не встретить.</td></tr>
+        <tr><td>Витая пара cat5 и выше</td><td class="mono">100 м</td><td>Топология «звезда»: в центре коммутатор. Оборвался один кабель — страдает только один узел.</td></tr>
+        <tr><td>10 Гбит/с по витой паре</td><td class="mono">≈50 м</td><td>Нужна категория 6 и выше. Дальше затухание не даёт принять сигнал.</td></tr>
+        <tr><td>Многомодовая оптика</td><td class="mono">сотни м — 2 км</td><td>Дешевле одномодовой, для коротких расстояний.</td></tr>
+        <tr><td>Одномодовая оптика</td><td class="mono">до 5 км (1000BASE-LX)</td><td>Без повторителей, для больших расстояний.</td></tr>
+        <tr><td>Медный кабель 40/100 Гбит/с</td><td class="mono">единицы метров</td><td>Для подключения серверов в стойке к коммутатору в её верхней части (ToR).</td></tr>
+      </tbody>
+    </table></div>
+    <div class="grid">
+      <div class="card"><b>Оптика в Ethernet</b><span>Всегда два волокна: одно передаёт, другое принимает. Домашний оптический вход от провайдера обычно одно волокно на оба направления: это другая технология.</span></div>
+      <div class="card"><b>Запас по длине</b><span>Стандарты сделаны с запасом. Линия в 130 м вместо 100, возможно, заработает, но на нагруженном канале так делать нельзя.</span></div>
+      <div class="card"><b>Экзотика</b><span>В сетях хранения данных иногда встречаются InfiniBand и Fiber Channel, но 40 и 100 Гбит/с Ethernet закрывают почти все задачи.</span></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="kicker"><h2>9. Концентратор и коммутатор</h2><span class="time">53:42</span></div>
+    <p>Из оборудования Ethernet есть сетевые адаптеры, концентраторы (хабы), медиаконвертеры и повторители, коммутаторы и маршрутизаторы. Главное — понять разницу между хабом и коммутатором.</p>
+    <div class="grid">
+      <div class="card"><b>Хаб (концентратор)</b><span>Устройство физического уровня. Получил сигнал на одном порту — скопировал на все остальные. Разбираться, кому кадр, должны сами узлы. Все подключённые узлы — один домен коллизий. Для 10 Мбит/с годилось, потом стало узким местом.</span></div>
+      <div class="card"><b>Коммутатор (switch)</b><span>Знает, где какой узел, и отправляет кадр только в нужный порт. Для этого ведёт таблицу коммутации: MAC-адрес → номер порта, плюс таймер.</span></div>
+    </div>
+    <div class="panel">
+      <h3>Как коммутатор учится</h3>
+      <p class="muted" style="font-size:14px">Четыре компьютера, A–D, подключены к портам 1–4. Выберите, кто кому отправляет кадр, и смотрите на таблицу и на то, куда ушёл кадр.</p>
+      <div class="sel-grid">
+        <label>Отправитель<select id="swFrom"></select></label>
+        <label>Получатель<select id="swTo"></select></label>
+      </div>
+      <div class="controls">
+        <button class="btn" id="swSend">Отправить кадр</button>
+        <button class="btn ghost" id="swMode">Режим: коммутатор</button>
+        <button class="btn ghost" id="swMove">Переткнуть A и D</button>
+        <button class="btn ghost" id="swReset">Выключить и включить</button>
+      </div>
+      <svg id="sw" viewBox="0 0 640 170" role="img" aria-label="Схема коммутатора"></svg>
+      <div class="caption" id="swres"></div>
+      <div class="tscroll"><table>
+        <thead><tr><th>MAC-адрес</th><th>Порт</th><th>Таймер</th></tr></thead>
+        <tbody id="swTab"></tbody>
+      </table></div>
+    </div>
+    <div class="grid">
+      <div class="card"><b>Таблица пустая</b><span>Только что включённый коммутатор ничего не знает. Он работает как хаб и рассылает кадр на все порты, кроме того, откуда он пришёл.</span></div>
+      <div class="card"><b>Учится по источнику</b><span>Из каждого кадра он запоминает: «MAC отправителя — на таком порту». Ответ получателя тоже записывается.</span></div>
+      <div class="card"><b>Фильтрует</b><span>Если адрес назначения известен, кадр идёт только в нужный порт, остальные узлы спокойно общаются между собой.</span></div>
+      <div class="card"><b>Забывает</b><span>Запись живёт ограниченное время. Пришёл новый кадр от узла — таймер сбрасывается. Не пришёл — запись удаляется, таблица не переполняется. Переткнули узел в другой порт — запись обновится при первом же кадре.</span></div>
+    </div>
+    <div class="quote">На одном порту может быть много MAC-адресов: за ним может стоять другой коммутатор с десятком компьютеров. Поэтому коммутатор не может решить, что на порту всего один узел. Широковещательные кадры он всегда рассылает по всем портам.</div>
+  </section>
+
+  <section class="block">
+    <h2>Главное за 30 секунд</h2>
+    <ul class="recap">
+      <li>Канальный уровень делит канал, адресует узлы, задаёт топологию, ловит ошибки и согласует скорость.</li>
+      <li>Канал делят по частоте (FDM) или по времени (TDM). Ethernet работает по времени, без главного устройства.</li>
+      <li>CSMA/CD: слушаем, передаём, при коллизии шлём jam, ждём случайное время и повторяем. После 16 неудач сдаёмся.</li>
+      <li>Домен коллизий и широковещательный домен — разные вещи.</li>
+      <li>MAC-адрес: 3 байта производителя (OUI) и 3 байта номера карты, плюс флаги unicast/multicast и заводской/ручной.</li>
+      <li>Сегодня используется кадр Ethernet II. Все версии Ethernet отличаются средой и скоростью, но не MAC-протоколом.</li>
+      <li>Хаб копирует кадр на все порты, коммутатор учит таблицу «MAC → порт» и отправляет кадр только туда, где получатель.</li>
+    </ul>
+    <div><button class="btn" id="go-quiz">Пройти тест</button></div>
+  </section>
+</main>
+
+<main id="view-quiz" hidden>
+  <div class="qwrap" id="quiz"></div>
+</main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const col=n=>`--lc:var(--l${n});--ls:var(--l${n}s)`;
+
+// 2. FDM / TDM
+const PCOL=['--l1','--l2','--l4'];
+function drawDM(m){
+  let s='<rect x="40" y="10" width="590" height="170" rx="6" style="fill:none;stroke:var(--line);stroke-width:2"/>';
+  if(m==='fdm'){
+    for(let i=0;i<3;i++){const y=14+i*56;
+      s+=`<rect x="44" y="${y}" width="582" height="48" rx="4" style="fill:var(${PCOL[i]}s);stroke:var(${PCOL[i]})"/><text class="t" x="56" y="${y+29}">пара ${i+1} передаёт всё время</text>`}
+    $('dmres').innerHTML='Все пары говорят <b>одновременно</b>, каждая в своём диапазоне частот. Диапазоны не пересекаются, приёмник вытаскивает каждый сигнал отдельно.';
+  }else{
+    const w=582/12;
+    for(let k=0;k<12;k++){const i=k%3;s+=`<rect x="${44+k*w}" y="14" width="${w-2}" height="162" rx="3" style="fill:var(${PCOL[i]}s);stroke:var(${PCOL[i]})"/><text class="t" x="${44+k*w+w/2-5}" y="100">${i+1}</text>`}
+    $('dmres').innerHTML='Всю полосу занимает <b>одна пара за раз</b>, а время делится на короткие слоты. Каждая пара получает свой слот по очереди. Цифра в слоте — номер пары.';
+  }
+  s+='<text class="ts" x="4" y="100" transform="rotate(-90 12 100)">частота</text><text class="ts" x="560" y="200">время →</text>';
+  $('dm').innerHTML=s;
+  document.querySelectorAll('#dmBtns .btn').forEach(b=>b.classList.toggle('ghost',b.dataset.m!==m));
+}
+document.querySelectorAll('#dmBtns .btn').forEach(b=>b.onclick=()=>drawDM(b.dataset.m));drawDM('fdm');
+
+// 5. CSMA/CD steps
+const ST3=[[2,'Собрать кадр','сетевая карта готовит данные'],[2,'Проверить, свободна ли линия','слушаем несущую'],[2,'Выдержать межкадровый интервал','пауза 96 бит'],[1,'Передавать и следить за коллизией','сравниваем мощность сигнала'],[1,'Послать jam-сигнал','32 бита, если заметили коллизию'],[2,'Выждать случайную паузу','k × 512 бит'],[2,'Повторить передачу','не больше 16 попыток']];
+$('steps3').innerHTML=ST3.map((s,i)=>`<div class="st ${i>=4?'cond':''}" style="${col(s[0])}"><b>${i+1}. ${s[1]}</b><small>${s[2]}${i>=4?' (только при коллизии)':''}</small></div>`).join('');
+
+const SP=[10,100,1000,10000];
+const tm=us=>us>=1000?(us/1000).toLocaleString('ru-RU',{maximumFractionDigits:2})+' мс':us>=1?us.toLocaleString('ru-RU',{maximumFractionDigits:2})+' мкс':(us*1000).toLocaleString('ru-RU',{maximumFractionDigits:2})+' нс';
+const spName=v=>v>=1000?(v/1000)+' Гбит/с':v+' Мбит/с';
+function drawB(){
+  const v=SP[+$('sSp').value-1],n=+$('sN').value;$('vSp').textContent=spName(v);$('vN').textContent=n;
+  const bit=1/v; // мкс на бит
+  const e=Math.min(n,10),mx=2**e-1;
+  $('bres').innerHTML=`Межкадровый интервал: 96 бит = <b>${tm(96*bit)}</b>. Одно окно (512 бит) = <b>${tm(512*bit)}</b>.<br>`+
+   (n>=16?'<span class="err">16-я коллизия подряд: узел сдаётся и сообщает драйверу, что сеть недоступна.</span>':
+   `После коллизии №${n} узел выбирает <i>k</i> от 0 до <b>${mx}</b> и ждёт <i>k</i> × 512 бит: от 0 до <b>${tm(mx*512*bit)}</b>.${n>10?' Верхняя граница уже не растёт (потолок на 10-й попытке).':''}`);
+}
+$('sSp').oninput=drawB;$('sN').oninput=drawB;drawB();
+$('sSp').setAttribute('aria-label','Скорость сети');$('sN').setAttribute('aria-label','Номер коллизии подряд');
+function simulate(){
+  const log=$('simlog');const add=(c,t)=>{const d=document.createElement('div');d.className=c;d.textContent=t;log.appendChild(d)};
+  add('','Узлы A и B начали передачу одновременно.');
+  for(let n=1;n<=16;n++){
+    add('col',`Коллизия №${n}: оба шлют jam (32 бита) и берут случайную паузу.`);
+    if(n>=16){add('col','16 попыток подряд без успеха: узлы сдаются.');break}
+    const mx=2**Math.min(n,10),a=Math.floor(Math.random()*mx),b=Math.floor(Math.random()*mx);
+    if(a===b){add('',`  A выбрал k=${a}, B выбрал k=${b} (из 0…${mx-1}): совпало, снова сталкиваются.`);continue}
+    add('win',`  A выбрал k=${a}, B выбрал k=${b} (из 0…${mx-1}): ${a<b?'A':'B'} ждёт меньше и передаёт первым, второй видит занятую линию и ждёт.`);break;
+  }
+  log.scrollTop=log.scrollHeight;
+}
+$('sim').onclick=simulate;$('simClear').onclick=()=>{$('simlog').innerHTML=''};
+
+// 7. MAC parser
+const MEX=[['Обычная карта','00:1A:2B:3C:4D:5E'],['Группа (multicast)','01:00:5E:00:00:FB'],['Широковещательный','FF:FF:FF:FF:FF:FF'],['Назначен вручную','02:00:00:AA:BB:CC']];
+$('macEx').innerHTML=MEX.map((m,i)=>`<button class="btn ghost" data-i="${i}">${m[0]}</button>`).join('');
+$('macEx').querySelectorAll('button').forEach(b=>b.onclick=()=>{$('mac').value=MEX[+b.dataset.i][1];drawMac()});
+function drawMac(){
+  const h=$('mac').value.replace(/[^0-9a-fA-F]/g,'').toUpperCase();
+  if(h.length!==12){$('macres').innerHTML=`<span class="warn">Нужно 12 шестнадцатеричных символов (0–9, A–F). Сейчас ${h.length}.</span>`;return}
+  const by=h.match(/../g),b0=parseInt(by[0],16),bits=b0.toString(2).padStart(8,'0');
+  const ig=b0&1,ul=(b0>>1)&1,bc=h==='FFFFFFFFFFFF';
+  const kind=bc?'широковещательный: кадр получат все в сети':ig?'групповой (multicast): адрес группы устройств':'индивидуальный (unicast): адрес одного устройства';
+  $('macres').innerHTML=`<div>${by.map((x,i)=>`<span class="bitbox"><span>${i<3?'OUI':'NIC'}</span><b>${x}</b></span>`).join('')}</div>`+
+   `<p style="margin-top:8px">Первый байт <b class="mono">${by[0]}</b> = <span class="mono">${bits.slice(0,6)}<b style="color:var(--accent)">${bits[6]}${bits[7]}</b></span>.</p>`+
+   `<p>Бит I/G = <b>${ig}</b>: ${kind}.</p>`+
+   `<p>Бит U/L = <b>${ul}</b>: ${ul?'адрес <b>назначен вручную</b> (его могли поменять, например, чтобы скрыть производителя)':'<b>заводской</b> адрес: первые три байта выданы производителю'}.</p>`+
+   `<p class="muted">Первые три байта (OUI): <span class="mono">${by.slice(0,3).join(':')}</span>, последние три (номер карты): <span class="mono">${by.slice(3).join(':')}</span>.</p>`;
+}
+$('mac').oninput=drawMac;drawMac();
+
+// 9. switch
+const NODES=['A','B','C','D'];
+let pos,tab,hub,lastMsg;
+function swInit(){pos={A:1,B:2,C:3,D:4};tab={};lastMsg='Таблица пуста. Отправьте кадр.'}
+swInit();hub=false;
+$('swFrom').innerHTML=NODES.map(n=>`<option>${n}</option>`).join('');
+$('swTo').innerHTML=NODES.map((n,i)=>`<option ${i===3?'selected':''}>${n}</option>`).join('');
+function drawSw(copies,origin){
+  copies=copies||{};
+  let s=`<rect x="200" y="8" width="240" height="46" rx="8" style="fill:var(--${hub?'l3s':'l2s'});stroke:var(--${hub?'l3':'l2'});stroke-width:2"/><text class="net-label" x="320" y="36" text-anchor="middle">${hub?'ХАБ (физический уровень)':'КОММУТАТОР'}</text>`;
+  for(let p=1;p<=4;p++){const x=80+(p-1)*160,n=NODES.find(k=>pos[k]===p);
+    const c=copies[p];let st='fill:var(--bg);stroke:var(--line)',ln='stroke:var(--line)';
+    if(origin===p){st='fill:var(--accent-soft);stroke:var(--accent)';ln='stroke:var(--accent)'}
+    else if(c==='ok'){st='fill:var(--good-soft);stroke:var(--good)';ln='stroke:var(--good)'}
+    else if(c==='drop'){st='fill:var(--bad-soft);stroke:var(--bad);stroke-dasharray:4 3';ln='stroke:var(--bad);stroke-dasharray:4 3'}
+    s+=`<line x1="${x}" y1="54" x2="${x}" y2="100" style="${ln};stroke-width:3"/><text class="ts" x="${x+8}" y="82">порт ${p}</text><rect x="${x-34}" y="100" width="68" height="40" rx="6" style="${st};stroke-width:2"/><text class="t" x="${x}" y="125" text-anchor="middle">${n}</text>`;
+    if(c)s+=`<text class="ts" x="${x}" y="158" text-anchor="middle">${c==='ok'?'принял':'отбросил'}</text>`;
+    else if(origin===p)s+=`<text class="ts" x="${x}" y="158" text-anchor="middle">отправил</text>`}
+  $('sw').innerHTML=s;
+  $('swres').innerHTML=lastMsg;
+  const rows=Object.keys(tab).sort().map(k=>`<tr><td class="mono">MAC-${k}</td><td class="mono">${tab[k]}</td><td>300 с, сброшен</td></tr>`).join('');
+  $('swTab').innerHTML=hub?'<tr><td colspan="3" class="muted">У хаба нет таблицы: он не знает, где кто.</td></tr>':rows||'<tr><td colspan="3" class="muted">Пусто</td></tr>';
+  $('swMode').textContent='Режим: '+(hub?'хаб':'коммутатор');
+}
+function swSend(){
+  const f=$('swFrom').value,t=$('swTo').value;
+  if(f===t){lastMsg='Отправитель и получатель совпадают. Выберите разных.';drawSw();return}
+  const inp=pos[f],copies={};
+  if(hub){
+    NODES.forEach(n=>{if(n!==f)copies[pos[n]]=n===t?'ok':'drop'});
+    lastMsg=`Хаб скопировал кадр на все порты, кроме порта ${inp}. Принял только ${t}, остальные отбросили чужой кадр. Лишний трафик, и все делят один домен коллизий.`;
+    drawSw(copies,inp);return}
+  tab[f]=inp;
+  const known=tab[t];
+  if(known===undefined){
+    NODES.forEach(n=>{if(n!==f)copies[pos[n]]=n===t?'ok':'drop'});
+    lastMsg=`Коммутатор записал: MAC-${f} → порт ${inp}. Адрес ${t} ему неизвестен, поэтому он разослал кадр на <b>все порты, кроме ${inp}</b> (flood). Принял его ${t}, остальные отбросили.`;
+  }else if(known===inp){
+    lastMsg=`Коммутатор записал: MAC-${f} → порт ${inp}. Получатель ${t} уже за этим же портом, кадр <b>отфильтрован</b>: никому не отправлен.`;
+  }else{
+    const real=NODES.find(n=>pos[n]===known);copies[known]=real===t?'ok':'drop';
+    lastMsg=`Коммутатор записал: MAC-${f} → порт ${inp}. Адрес ${t} известен: порт ${known}. Кадр ушёл <b>только туда</b>.`+(real===t?' Остальные узлы ничего не получили.':` <span class="err">Но там теперь стоит ${real}, а не ${t}: запись устарела. Она обновится, когда ${t} сам что-нибудь отправит.</span>`);
+  }
+  drawSw(copies,inp);
+}
+$('swSend').onclick=swSend;
+$('swMode').onclick=()=>{hub=!hub;lastMsg=hub?'Хаб: просто копирует всё на все порты.':'Коммутатор: учится и фильтрует.';drawSw()};
+$('swMove').onclick=()=>{const a=pos.A;pos.A=pos.D;pos.D=a;lastMsg='Узлы A и D переткнули в чужие порты. Таблица коммутатора пока помнит старые порты.';drawSw()};
+$('swReset').onclick=()=>{swInit();lastMsg='Коммутатор перезагрузили: таблица пустая, всё забыл.';drawSw()};
+drawSw();
+
+// tabs
+function view(v){$('view-notes').hidden=v!=='notes';$('view-quiz').hidden=v!=='quiz';document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.view===v));window.scrollTo({top:0})}
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>view(t.dataset.view));$('go-quiz').onclick=()=>view('quiz');
+
+// quiz
+const Q=[
+ ["Что НЕ относится к задачам канального уровня?",["Делить канал между узлами","Адресация устройств по MAC","Выбирать маршрут между разными сетями","Обнаруживать ошибки в кадрах"],2,"Выбор маршрута между сетями — задача сетевого уровня. Канальный уровень работает внутри локальной сети."],
+ ["Как устроено частотное разделение канала (FDM)?",["Узлы говорят по очереди","Каждой паре выделяют свой диапазон частот, и все передают одновременно","Один узел главный и раздаёт слоты","Данные идут только в одну сторону"],1,"Диапазоны не пересекаются, поэтому приёмник вытаскивает каждый сигнал отдельно."],
+ ["Какое разделение канала используется в Ethernet?",["Частотное","Временное, статистическое: без главного устройства","Только маркерное","Радиочастотное"],1,"Любой узел передаёт, если линия свободна. Всю полосу занимает один узел за раз."],
+ ["Что объединяет все версии Ethernet?",["Одинаковый кабель","Одинаковая скорость","Алгоритм доступа к среде CSMA/CD","Один производитель"],2,"Версии различаются средой и скоростью, а алгоритм доступа и формат MAC общие."],
+ ["Почему Ethernet вытеснил маркерные сети вроде Token Ring?",["Он был медленнее, но красивее","Нет главного устройства, оборудование простое и дешёвое","Он не использует кабели","Его придумали позже всех"],1,"Маркерные сети были алгоритмически сложными, а оборудование дорогим."],
+ ["Что такое коллизия в Ethernet?",["Потеря кабеля","Два узла начали передавать одновременно, и их сигналы смешались","Неправильный MAC-адрес","Перегрев коммутатора"],1,"Результирующий сигнал портится, и узел замечает это по резкому росту мощности на линии."],
+ ["Что делает узел, обнаружив коллизию во время передачи?",["Продолжает передачу до конца","Обрывает передачу и шлёт jam-сигнал в 32 бита","Выключает сетевую карту","Отправляет кадр широковещательно"],1,"Jam портит сигнал окончательно, чтобы все приёмники поняли, что кадр битый, и очистили буферы."],
+ ["Зачем между кадрами делается межкадровый интервал (IFG)?",["Чтобы охладить карту","Чтобы другой узел мог начать передачу и не остался без линии","Чтобы сжать данные","Он нужен только для оптики"],1,"Пауза встроена в протокол, чтобы один узел не захватывал канал навсегда."],
+ ["Какова длина межкадрового интервала?",["8 бит","32 бита","96 бит","512 бит"],2,"96 бит. Чем быстрее сеть, тем меньше это в секундах: 9,6 мкс на 10 Мбит/с и 0,96 мкс на 100 Мбит/с."],
+ ["Почему паузу после коллизии выбирают случайной?",["Чтобы запутать злоумышленника","Если ждать одинаково, узлы столкнутся снова","Так проще написать драйвер","Это не случайно, а фиксировано"],1,"У разных узлов случайное число будет скорее всего разным, и один из них пойдёт первым."],
+ ["После 3-й подряд коллизии узел выбирает k. Из какого диапазона?",["0…3","0…7","0…15","0…512"],1,"От 0 до 2^n−1, где n=3, то есть 0…7. Потом k умножается на 512 бит."],
+ ["Почему в формуле backoff стоят именно 512 бит?",["Это размер MAC-адреса","Это время передачи кадра минимального размера","Это длина кабеля","Это 16 попыток по 32 бита"],1,"Меньше кадра в Ethernet не бывает, поэтому его время служит единицей паузы."],
+ ["Сколько неудачных попыток подряд допускает CSMA/CD?",["2","8","16","Бесконечно"],2,"После 16 попыток узел сообщает драйверу, что сеть недоступна."],
+ ["Главный минус статистического доступа CSMA/CD:",["Нужен главный узел","При резком росте активности возникает много коллизий, и полезная доля канала падает","Он работает только на меди","Скорость жёстко фиксирована"],1,"При ровной нагрузке всё хорошо, а на пиках узлы в основном ждут. Поэтому сети делят коммутаторами."],
+ ["Один коммутатор, к нему подключены три компьютера. Сколько здесь доменов коллизий и широковещательных доменов?",["1 и 3","3 и 1","3 и 3","1 и 1"],1,"Каждый кабель от коммутатора до компьютера — отдельный домен коллизий. А широковещательный кадр дойдёт до всех трёх, это один домен."],
+ ["Из чего состоит MAC-адрес?",["4 байта: сеть и узел","6 байт: 3 байта производителя (OUI) и 3 байта номера карты","8 байт, все заводские","2 байта номера порта"],1,"Первые три байта выдаёт производителю специальная организация, остальные производитель назначает сам."],
+ ["Что означает адрес FF:FF:FF:FF:FF:FF?",["Адрес по умолчанию для роутера","Широковещательный адрес: кадр получат все в сети","Неисправная карта","Адрес Wi-Fi"],1,"Коммутатор рассылает такой кадр по всем портам."],
+ ["Первый байт адреса — 01. Какой это адрес?",["Групповой (multicast), потому что бит I/G равен 1","Широковещательный","Заводской индивидуальный","Недопустимый"],0,"01 = 00000001. Младший бит равен 1, значит это адрес группы."],
+ ["Зачем иногда меняют MAC руками (бит U/L = 1)?",["Чтобы ускорить сеть","Например, чтобы скрыть производителя оборудования от того, кто смотрит трафик","Это обязательно по стандарту","Чтобы увеличить дальность"],1,"По первым трём байтам видно производителя, а это лишняя информация с точки зрения безопасности."],
+ ["В чём главное отличие хаба от коммутатора?",["Хаб быстрее","Хаб копирует кадр на все порты, коммутатор отправляет кадр в нужный порт по таблице MAC","Хаб работает на сетевом уровне","Коммутатор нельзя подключать к ПК"],1,"Хаб — устройство физического уровня, он ничего не знает про адреса."],
+ ["Только что включённый коммутатор получил кадр. Адреса получателя в таблице нет. Что он сделает?",["Отбросит кадр","Разошлёт на все порты, кроме того, откуда пришёл, и запомнит адрес отправителя","Отправит обратно","Спросит администратора"],1,"Пока он ничего не знает, ведёт себя как хаб, но из каждого кадра учит «MAC источника → порт»."],
+ ["Почему на одном порту коммутатора может быть много MAC-адресов?",["Это ошибка конфигурации","За портом может стоять другой коммутатор с десятком компьютеров","Так устроен MAC","Так работает хаб"],1,"Поэтому коммутатор не считает, что за портом один узел, и не отбрасывает ради этого кадры."],
+ ["Зачем записям в таблице коммутации нужен таймер?",["Для красоты","Чтобы устаревшие записи удалялись, таблица не переполнялась и обновлялась при перестановке узлов","Чтобы шифровать кадры","Чтобы считать скорость"],1,"Пришёл кадр от узла — таймер сброшен. Не пришёл — запись удалена."]
+].map(([q,o,a,e])=>{const c=o[a];const s=o.map((t,i)=>[t,Math.random()]).sort((x,y)=>x[1]-y[1]).map(x=>x[0]);return {q,o:s,a:s.indexOf(c),e}});
+const ORD=ST3.map(s=>s[1]);
+let qi=0,score=0,wrong=[],answered=false;const qroot=$('quiz'),total=Q.length+1;
+const head=()=>`<div class="progress"><span>Задание ${Math.min(qi+1,total)} из ${total}</span><div class="bar"><i style="width:${qi/total*100}%"></i></div><span>Верно: ${score}</span></div>`;
+function renderQ(){answered=false;
+  if(qi<Q.length){const x=Q[qi];qroot.innerHTML=head()+`<div class="qcard"><h3>${x.q}</h3><div class="opts">${x.o.map((o,i)=>`<button class="opt" data-i="${i}">${o}</button>`).join('')}</div><div id="ex"></div></div>`;
+    qroot.querySelectorAll('.opt').forEach(b=>b.onclick=()=>pick(+b.dataset.i))}
+  else if(qi===Q.length)renderOrder();else renderResult()}
+function pick(i){if(answered)return;answered=true;const x=Q[qi],ok=i===x.a;if(ok)score++;else wrong.push(x);
+  qroot.querySelectorAll('.opt').forEach((b,j)=>{b.disabled=true;if(j===x.a)b.classList.add('right');else if(j===i)b.classList.add('wrong')});
+  $('ex').innerHTML=`<div class="explain"><b>${ok?'Верно.':'Неверно.'}</b> ${x.e}</div><div class="controls" style="margin-top:10px"><button class="btn" id="nx">Дальше</button></div>`;
+  $('nx').onclick=()=>{qi++;renderQ()};$('nx').focus()}
+function renderOrder(){let chosen=[];const items=ORD.map((n,i)=>({n,i})).sort(()=>Math.random()-.5);
+  function draw(done){
+    const slots=ORD.map((n,k)=>{const c=chosen[k];let cl='';if(done)cl=c&&c.i===k?'ok':'no';
+      return `<div class="slot ${cl}"><span class="n">${k+1}</span><span>${c?c.n:'<span class="muted">…</span>'}${done&&cl==='no'?` <span class="muted">→ ${n}</span>`:''}</span></div>`}).join('');
+    qroot.innerHTML=head()+`<div class="qcard"><h3>Финальное задание: расставьте этапы передачи кадра при коллизии по порядку</h3><p class="muted">Нажимайте на этапы по очереди, от отправителя к получателю.</p>
+     <div class="pool">${items.filter(it=>!chosen.includes(it)).map(it=>`<button class="pick" data-i="${it.i}">${it.n}</button>`).join('')}</div>
+     <div class="order">${slots}</div><div class="controls">${done?'<button class="btn" id="fin">Посмотреть результат</button>':'<button class="btn ghost" id="undo">Отменить последний</button>'}</div></div>`;
+    if(!done){qroot.querySelectorAll('.pick').forEach(b=>b.onclick=()=>{chosen.push(items.find(it=>it.i===+b.dataset.i));
+      if(chosen.length===ORD.length){const ok=chosen.every((c,k)=>c.i===k);if(ok)score++;else wrong.push({q:'Этапы передачи кадра при коллизии',e:ORD.join(' → ')});draw(true)}else draw(false)});
+      const u=$('undo');u.disabled=!chosen.length;u.onclick=()=>{chosen.pop();draw(false)}}
+    else $('fin').onclick=()=>{qi++;renderQ()}}
+  draw(false)}
+function renderResult(){const pct=Math.round(score/total*100);
+  const msg=pct>=90?'Отлично, можно переходить к следующей лекции.':pct>=70?'Хорошо. Посмотрите разбор ошибок ниже.':'Стоит ещё раз пройти конспект и попробовать снова.';
+  qroot.innerHTML=`<div class="qcard result"><div class="eyebrow">Результат</div><div class="score">${score} / ${total}</div><p>${msg}</p>${wrong.length?`<div class="review"><b>Над чем поработать:</b>${wrong.map(w=>`<div><b>${w.q}</b><br>${w.e}</div>`).join('')}</div>`:''}
+   <div class="controls"><button class="btn" id="again">Пройти заново</button><button class="btn ghost" id="back">К конспекту</button></div></div>`;
+  $('again').onclick=()=>{qi=0;score=0;wrong=[];renderQ()};$('back').onclick=()=>view('notes')}
+renderQ();
+
+</script>
+</body>
+</html>
